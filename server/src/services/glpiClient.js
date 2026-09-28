@@ -42,7 +42,24 @@ async function initSession() {
     },
     params: { get_full_session: false },
   });
-  return data.session_token;
+  const token = data.session_token;
+
+  // Por defecto GLPI abre la sesión solo en la entidad activa del usuario
+  // (no recursiva). Como los tickets están repartidos entre PAE y sus
+  // sub-entidades, sin este cambio las búsquedas solo verían la entidad
+  // raíz y devolverían 0 resultados.
+  await http.post(
+    '/changeActiveEntities',
+    { entities_id: 'all', is_recursive: true },
+    {
+      headers: {
+        'App-Token': config.glpi.appToken,
+        'Session-Token': token,
+      },
+    }
+  );
+
+  return token;
 }
 
 async function getSessionToken() {

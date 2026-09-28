@@ -48,16 +48,28 @@ async function initSession() {
   // (no recursiva). Como los tickets están repartidos entre PAE y sus
   // sub-entidades, sin este cambio las búsquedas solo verían la entidad
   // raíz y devolverían 0 resultados.
-  await http.post(
-    '/changeActiveEntities',
-    { entities_id: 'all', is_recursive: true },
-    {
-      headers: {
-        'App-Token': config.glpi.appToken,
-        'Session-Token': token,
-      },
-    }
-  );
+  // Esta instancia de GLPI valida el body contra un schema que exige que
+  // los datos vengan envueltos en la propiedad "content" (en vez de los
+  // campos sueltos que documenta la API clásica de GLPI).
+  try {
+    await http.post(
+      '/changeActiveEntities',
+      { content: { entities_id: 'all', is_recursive: true } },
+      {
+        headers: {
+          'App-Token': config.glpi.appToken,
+          'Session-Token': token,
+        },
+      }
+    );
+  } catch (error) {
+    // No abortamos el login por esto: en el peor caso los reportes quedan
+    // acotados a la entidad activa del usuario en vez de fallar del todo.
+    console.warn(
+      '[glpiClient] No se pudo activar todas las entidades:',
+      error.response?.data || error.message
+    );
+  }
 
   return token;
 }

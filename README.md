@@ -103,6 +103,27 @@ Token / User Token. Si responde con conteos en cero pero sin error, revisa
 los `GLPI_SO_*` (paso 2) — probablemente los IDs de campo no coinciden con
 tu instancia.
 
+## Tablero general (tiempo real)
+
+Pestaña por defecto del frontend. Muestra los 12 indicadores esenciales de la
+mesa de ayuda (ver `docs/Matriz_Indicadores_Dashboard_GLPI.xlsx`, hoja
+"Tablero general"): pendientes, sin asignar, casos >7 días, antigüedad,
+pendientes por técnico/equipo, ingresos vs. cierres, tiempo de resolución,
+entidades y % sin categoría. Se refresca solo cada 60 s.
+
+- Endpoint: `GET /api/reports/overview` (caché de 60 s, `OVERVIEW_CACHE_SECONDS`).
+- Lógica de indicadores: `server/src/services/overview.js` (pura, sin red).
+- Equipos por técnico: `server/src/data/teams.js`. Un técnico que no esté ahí
+  aparece como Soporte Técnico y el tablero lo avisa.
+- Reglas: pendiente = Nuevo, En curso (asignado/planificado) y En espera;
+  MODIF-DATOS/ELIM cuentan en los KPIs pero no se listan.
+- Search options adicionales (verificar en tu instancia, ver sección 2):
+  `GLPI_SO_TITLE=1`, `GLPI_SO_ENTITY=80`, `GLPI_SO_DATE_MOD=19`. El backlog
+  se consulta con el estado `notold` de GLPI.
+- **Modo CSV (demo/pruebas sin acceso a GLPI)**: define `GLPI_CSV_PATH` con la
+  ruta de un CSV exportado de GLPI y el tablero se calcula desde ese archivo.
+  No subas el CSV al repositorio (contiene datos de usuarios).
+
 ## 5. Despliegue on-premise
 
 Al ser un despliegue interno de la UTI, la forma más simple es:

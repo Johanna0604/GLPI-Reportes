@@ -20,4 +20,5 @@ export const api = {
   byCategory: (range) => get('/by-category', range),
   sla: (range) => get('/sla', range),
   trends: (range) => get('/trends', range),
+  overview: () => get('/overview'),
 };

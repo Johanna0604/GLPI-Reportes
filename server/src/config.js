@@ -32,6 +32,9 @@ export const config = {
       dateClosed: Number(process.env.GLPI_SO_DATE_CLOSED || 16),
       timeToResolve: Number(process.env.GLPI_SO_TIME_TO_RESOLVE || 18),
       solvedate: Number(process.env.GLPI_SO_SOLVEDATE || 17),
+      title: Number(process.env.GLPI_SO_TITLE || 1),
+      entity: Number(process.env.GLPI_SO_ENTITY || 80),
+      dateMod: Number(process.env.GLPI_SO_DATE_MOD || 19),
     },
   },
   server: {

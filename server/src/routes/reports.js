@@ -7,6 +7,7 @@ import {
   getTrends,
   getSummary,
 } from '../services/reportService.js';
+import { getOverview } from '../services/overviewService.js';
 
 export const reportsRouter = Router();
 
@@ -50,3 +51,6 @@ reportsRouter.get('/by-technician', wrap(getTicketsByTechnician));
 reportsRouter.get('/by-category', wrap(getTicketsByCategory));
 reportsRouter.get('/sla', wrap(getSlaCompliance));
 reportsRouter.get('/trends', wrap(getTrends));
+
+// Tablero general (tiempo real). Sin from/to: usa ventanas fijas de 30 días.
+reportsRouter.get('/overview', wrap(() => getOverview()));

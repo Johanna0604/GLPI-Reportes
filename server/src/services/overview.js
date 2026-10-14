@@ -61,7 +61,7 @@ function tone(value, { goodMax, warnMax }) {
  *   opened : tickets abiertos en los últimos 30 días
  *   closed : tickets cerrados en los últimos 60 días (30 actuales + 30 previos)
  */
-export function buildOverview({ backlog, opened, closed, now }) {
+export function buildOverview({ backlog, opened, closed, resolved = [], now }) {
   const unknown = new Set();
   const age = (t) => (now - t.opened) / DAY;
   const today = ymd(now);
@@ -106,6 +106,46 @@ export function buildOverview({ backlog, opened, closed, now }) {
       oldest: r.tickets.sort((a, b) => b.days - a.days).slice(0, 5),
     }))
     .sort((a, b) => b.count - a.count || b.maxDays - a.maxDays);
+
+  // ---- Pendientes por estado + resueltos sin cerrar ----
+  const STATE_LABELS = { 1: 'Nuevo', 2: 'En curso (asignado)', 3: 'En curso (planificado)', 4: 'En espera' };
+  const states = Object.entries(STATE_LABELS).map(([id, label]) => {
+    const rows = backlog.filter((t) => t.statusId === Number(id));
+    return {
+      statusId: Number(id),
+      label,
+      count: rows.length,
+      pct: pendientes ? round1((rows.length / pendientes) * 100) : 0,
+      maxDays: rows.length ? Math.round(Math.max(...rows.map(age))) : 0,
+      over7: rows.filter((t) => age(t) > 7).length,
+    };
+  });
+  const resolvedOver3 = resolved.filter((t) => (now - t.modified) / DAY > 3).length;
+  const resolvedPending = { count: resolved.length, over3: resolvedOver3, tone: resolvedOver3 > 0 ? 'warning' : 'good' };
+
+  // ---- Carga por equipo (tickets únicos por equipo) ----
+  const teamAgg = new Map();
+  for (const t of backlog) {
+    const people = t.technicians.length ? t.technicians.map((n) => resolveTech(n, unknown)) : [{ name: 'Sin asignar', team: 'Sin asignar' }];
+    const teamsOfTicket = new Set(people.map((p) => p.team));
+    for (const team of teamsOfTicket) {
+      if (!teamAgg.has(team)) teamAgg.set(team, { team, tickets: 0, over7: 0, techs: new Set() });
+      const row = teamAgg.get(team);
+      row.tickets += 1;
+      if (age(t) > 7) row.over7 += 1;
+    }
+    for (const p of people) if (p.team !== 'Sin asignar') teamAgg.get(p.team).techs.add(p.name);
+  }
+  const teams = [...teamAgg.values()]
+    .map((r) => ({
+      team: r.team,
+      tickets: r.tickets,
+      technicians: r.techs.size,
+      perTechnician: r.techs.size ? round1(r.tickets / r.techs.size) : null,
+      over7: r.over7,
+      pct: pendientes ? round1((r.tickets / pendientes) * 100) : 0,
+    }))
+    .sort((a, b) => b.tickets - a.tickets);
 
   // ---- Hoy y últimos 30 días ----
   const openedToday = opened.filter((t) => ymd(t.opened) === today).length;
@@ -185,6 +225,9 @@ export function buildOverview({ backlog, opened, closed, now }) {
       noCategory: { value: noCatPct, count: noCat, tone: noCatPct < 5 ? 'good' : noCatPct <= 20 ? 'warning' : 'critical' },
     },
     buckets,
+    states,
+    resolvedPending,
+    teams,
     technicians,
     flow,
     flowTotals: { ingresados: totalIn, cerrados: totalOut, saldo: totalIn - totalOut, growingStreak },

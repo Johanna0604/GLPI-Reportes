@@ -51,13 +51,15 @@ const since = (ms) => new Date(ms).toISOString().slice(0, 10);
 async function fromGlpi() {
   const now = limaNow();
   const q = (criteria) => search('Ticket', { criteria, forcedisplay: FIELDS, sort: SO.dateOpened, order: 'DESC' });
-  const [backlog, opened, closed] = await Promise.all([
+  const [backlog, opened, closed, resolved] = await Promise.all([
     // 'notold' = tickets aún no resueltos ni cerrados (Nuevo, En curso, En espera)
     q([{ field: SO.status, searchtype: 'equals', value: 'notold' }]),
     q([{ field: SO.dateOpened, searchtype: 'morethan', value: since(now - 30 * DAY) }]),
     q([{ field: SO.dateClosed, searchtype: 'morethan', value: since(now - 60 * DAY) }]),
+    // Resueltos que aún no se cierran (estado 5)
+    q([{ field: SO.status, searchtype: 'equals', value: 5 }]),
   ]);
-  return { now, backlog: backlog.map(fromRow), opened: opened.map(fromRow), closed: closed.map(fromRow) };
+  return { now, backlog: backlog.map(fromRow), opened: opened.map(fromRow), closed: closed.map(fromRow), resolved: resolved.map(fromRow) };
 }
 
 // ---------- CSV exportado ----------
@@ -90,6 +92,7 @@ function fromCsv(path) {
     backlog: tickets.filter((t) => OPEN_STATUSES.has(t.statusId)),
     opened: tickets.filter((t) => t.opened >= now - 30 * DAY),
     closed: tickets.filter((t) => t.closed && t.closed >= now - 60 * DAY),
+    resolved: tickets.filter((t) => t.statusId === 5),
   };
 }
 

@@ -4,6 +4,8 @@ import StatCard from '../components/StatCard.jsx';
 import AgeBucketsChart from '../components/AgeBucketsChart.jsx';
 import TechnicianRanking from '../components/TechnicianRanking.jsx';
 import FlowChart from '../components/FlowChart.jsx';
+import StatesCard from '../components/StatesCard.jsx';
+import TeamLoadCard from '../components/TeamLoadCard.jsx';
 import RankedBarChart from '../components/RankedBarChart.jsx';
 
 const REFRESH_MS = 60_000;
@@ -87,7 +89,10 @@ export default function OverviewView() {
       </div>
 
       <div className="chart-grid">
-        <AgeBucketsChart buckets={data.buckets} />
+        <div className="stack-col">
+          <AgeBucketsChart buckets={data.buckets} />
+          <StatesCard states={data.states} resolvedPending={data.resolvedPending} />
+        </div>
         <TechnicianRanking technicians={data.technicians} />
         <div className="chart-grid-full">
           <FlowChart flow={data.flow} totals={data.flowTotals} windowDays={data.windowDays} />
@@ -96,22 +101,27 @@ export default function OverviewView() {
 
       <h2 className="section-title">Contexto · últimos {data.windowDays} días</h2>
       <div className="context-grid">
-        <StatCard
-          label="Tiempo de resolución (mediana)"
-          value={fmtHours(res.medianHours)}
-          tone={res.tone}
-          hint={
-            res.changePct == null
-              ? `P90 ${fmtHours(res.p90Hours)}`
-              : `P90 ${fmtHours(res.p90Hours)} · ${res.changePct > 0 ? '▲' : '▼'} ${Math.abs(res.changePct)}% vs. 30 d previos`
-          }
-        />
-        <StatCard
-          label="Tickets sin categoría"
-          value={`${k.noCategory.value}%`}
-          tone={k.noCategory.tone}
-          hint={`${k.noCategory.count} de ${data.ticketsInWindow} · meta < 5%`}
-        />
+        <div className="stack-col">
+          <div className="tile-pair">
+            <StatCard
+              label="Tiempo de resolución (mediana)"
+              value={fmtHours(res.medianHours)}
+              tone={res.tone}
+              hint={
+                res.changePct == null
+                  ? `P90 ${fmtHours(res.p90Hours)}`
+                  : `P90 ${fmtHours(res.p90Hours)} · ${res.changePct > 0 ? '▲' : '▼'} ${Math.abs(res.changePct)}% vs. 30 d previos`
+              }
+            />
+            <StatCard
+              label="Tickets sin categoría"
+              value={`${k.noCategory.value}%`}
+              tone={k.noCategory.tone}
+              hint={`${k.noCategory.count} de ${data.ticketsInWindow} · meta < 5%`}
+            />
+          </div>
+          <TeamLoadCard teams={data.teams} />
+        </div>
         <RankedBarChart
           title="Top 5 entidades con más tickets"
           nameKey="entity"

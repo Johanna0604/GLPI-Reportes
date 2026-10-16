@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablero Mesa de Ayuda · GLPI</title>
+<style>
+:root{color-scheme:light;--bg:#f4f4f1;--s1:#fff;--s2:#f0efea;--tx:#0b0b0b;--tx2:#52514e;--tx3:#7a7872;--grid:#e1e0d9;--axis:#c3c2b7;--bd:rgba(11,11,11,.12);
+--c1:#2a78d6;--c2:#eb6834;--c3:#1baf7a;--c4:#eda100;--c5:#e87ba4;--c7:#4a3aa7;
+--good:#0a8f0a;--warn:#e0a000;--crit:#d03b3b;--neu:#898781;--accent:#2a78d6;
+--t-des:#c99a1f;--t-inf:#2a78d6;--t-sop:#1b8f5f;--t-sin:#8a8a8a}
+:root[data-theme=dark]{color-scheme:dark;--bg:#0d0d0d;--s1:#1a1a19;--s2:#232321;--tx:#fff;--tx2:#c3c2b7;--tx3:#8f8d86;--grid:#2c2c2a;--axis:#383835;--bd:rgba(255,255,255,.12);
+--c1:#3987e5;--c2:#d95926;--c3:#199e70;--c4:#c98500;--c5:#d55181;--c7:#9085e9;--good:#2fc02f;--warn:#fab219;--crit:#e66767;--accent:#3987e5;
+--t-des:#d6a82a;--t-inf:#3987e5;--t-sop:#25a574;--t-sin:#9a9a9a}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#0d0d0d;--s1:#1a1a19;--s2:#232321;--tx:#fff;--tx2:#c3c2b7;--tx3:#8f8d86;--grid:#2c2c2a;--axis:#383835;--bd:rgba(255,255,255,.12);
+--c1:#3987e5;--c2:#d95926;--c3:#199e70;--c4:#c98500;--c5:#d55181;--c7:#9085e9;--good:#2fc02f;--warn:#fab219;--crit:#e66767;--accent:#3987e5;
+--t-des:#d6a82a;--t-inf:#3987e5;--t-sop:#25a574;--t-sin:#9a9a9a}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px}
+header.top{background:var(--s1);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:20}
+.top-in{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:10px 0}
+.brand h1{margin:0;font-size:18px}.brand p{margin:0;color:var(--tx2);font-size:12px}
+.src{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2);flex:1;min-width:220px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--good);flex:none}.dot.live{animation:pl 2s infinite}.dot.err{background:var(--crit)}.dot.old{background:var(--warn)}
+@keyframes pl{70%{box-shadow:0 0 0 7px transparent}0%{box-shadow:0 0 0 0 var(--good)}}
+@media(prefers-reduced-motion:reduce){.dot.live{animation:none}}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.btn{border:1px solid var(--bd);background:var(--s1);border-radius:8px;padding:6px 11px;font-size:13px}
+.btn:hover{background:var(--s2)}.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.filters{background:var(--s1);border-bottom:1px solid var(--bd)}
+.fil-in{display:flex;flex-wrap:wrap;gap:8px 12px;padding:10px 0;align-items:flex-end}
+.fil-in label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--tx2)}
+.fil-in select,.fil-in input{border:1px solid var(--bd);background:var(--s1);border-radius:6px;padding:5px 8px;min-width:120px;max-width:220px}
+.fil-in .grow{flex:1;min-width:160px}.fil-in .grow input{width:100%;max-width:none}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--bd);background:var(--bg);position:sticky;top:0;z-index:10}
+.tab{border:0;background:none;padding:10px 16px;color:var(--tx2);border-bottom:3px solid transparent;white-space:nowrap}
+.tab[aria-selected=true]{color:var(--tx);font-weight:600;border-bottom-color:var(--accent)}
+main{padding:16px 0 56px}
+section.panel{display:none}section.panel.on{display:block}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(165px,1fr));margin-bottom:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));align-items:start}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));align-items:start}
+.kpi{background:var(--s1);border:1px solid var(--bd);border-left:4px solid var(--neu);border-radius:10px;padding:12px 14px;text-align:left;width:100%}
+.kpi.good{border-left-color:var(--good)}.kpi.warning{border-left-color:var(--warn)}.kpi.critical{border-left-color:var(--crit)}
+.kpi .l{font-size:12px;color:var(--tx2)}.kpi .v{font-size:28px;font-weight:700;line-height:1.15}
+.kpi.good .v{color:var(--good)}.kpi.critical .v{color:var(--crit)}
+.kpi .h{font-size:11.5px;color:var(--tx3)}
+button.kpi:hover{background:var(--s2)}
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;min-width:0}
+.card h3{margin:0;font-size:15px}.card .sub{margin:2px 0 10px;font-size:12px;color:var(--tx3)}
+.card-h{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:none;padding:3px 9px;font-size:12px;color:var(--tx2)}.seg button[aria-pressed=true]{background:var(--accent);color:#fff}
+.mini{border:1px solid var(--bd);background:none;border-radius:6px;padding:2px 8px;font-size:12px;color:var(--tx2)}
+.note{border:1px solid var(--warn);background:var(--s1);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--tx2);margin-bottom:12px}
+.note.crit{border-color:var(--crit)}
+.empty{color:var(--tx3);padding:20px;text-align:center;font-size:13px}
+/* barras horizontales */
+.hb{list-style:none;margin:0;padding:0}
+.hb li{display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;gap:8px;align-items:center;padding:3px 4px;border-radius:6px;font-size:13px}
+.hb li.click{cursor:pointer}.hb li.click:hover,.hb li.sel{background:var(--s2)}
+.hb .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx2)}
+.hb .tr{height:14px;background:transparent}.hb .bar{display:block;height:100%;border-radius:3px;min-width:3px}
+.hb .vl{white-space:nowrap;font-variant-numeric:tabular-nums}.hb .vl small{color:var(--tx3)}
+.flag{color:var(--crit);font-weight:700}
+.leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--tx2);margin:0 0 8px}
+.leg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+/* columnas verticales */
+.vb{display:flex;align-items:flex-end;gap:10px;height:210px;padding-top:18px;border-bottom:1px solid var(--axis)}
+.vb .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;min-width:0}
+.vb .col b{font-size:12px;margin-bottom:3px}.vb .col span{display:block;width:100%;max-width:60px;border-radius:4px 4px 0 0}
+.vl-row{display:flex;gap:10px;margin-top:5px}.vl-row div{flex:1;text-align:center;font-size:11.5px;color:var(--tx2)}
+.stack{display:flex;height:16px;border-radius:4px;overflow:hidden;gap:2px;margin:6px 0 10px}.stack span{display:block}
+.rows{list-style:none;margin:0;padding:0;font-size:13px}
+.rows li{display:grid;grid-template-columns:12px 1fr 44px 52px 84px;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums}
+.rows i{width:12px;height:12px;border-radius:3px}.rows .n{text-align:right;font-weight:700}.rows .p{text-align:right;color:var(--tx3)}.rows .m{text-align:right;color:var(--tx2)}
+.callout{margin-top:10px;padding:9px 12px;border-radius:8px;border-left:4px solid var(--neu);background:var(--s2);font-size:13px}
+.callout b{font-size:19px}.callout small{display:block;color:var(--tx2);font-size:12px}.callout.warning{border-left-color:var(--warn)}.callout.good{border-left-color:var(--good)}
+/* tablas */
+.tw{overflow:auto;max-height:520px;border:1px solid var(--grid);border-radius:8px}
+table.dt{border-collapse:collapse;width:100%;font-size:12.5px}
+.dt th,.dt td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--grid);vertical-align:top}
+.dt th{position:sticky;top:0;background:var(--s2);color:var(--tx2);cursor:pointer;white-space:nowrap;z-index:1}.dt th[aria-sort]{color:var(--tx)}
+.dt td.num,.dt th.num{text-align:right;font-variant-numeric:tabular-nums}.dt td.ttl{max-width:380px}
+.dt tr:hover td{background:var(--s2)}
+.chip{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;border:1px solid var(--bd);white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.chips button{border:1px solid var(--bd);background:var(--s1);border-radius:999px;padding:3px 11px;font-size:12px;color:var(--tx2)}
+.chips button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:8px;font-size:12px;color:var(--tx2)}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.tools input{border:1px solid var(--bd);background:var(--s1);border-radius:6px;padding:5px 8px;min-width:200px}
+.tools input[type=checkbox]{min-width:0;padding:0}
+.tools label{font-size:12px;color:var(--tx2);display:flex;gap:5px;align-items:center}
+/* alertas */
+.alerts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.alerts button{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;text-align:left;border:1px solid var(--bd);border-left:4px solid var(--neu);background:var(--s1);border-radius:8px;padding:8px 10px}
+.alerts button:hover{background:var(--s2)}.alerts .critical{border-left-color:var(--crit)}.alerts .warning{border-left-color:var(--warn)}.alerts .good{border-left-color:var(--good)}
+.alerts .n{font-size:18px;font-weight:700;min-width:34px;text-align:right}.alerts small{color:var(--tx3);display:block}
+.concl p{margin:5px 0}.concl .box{background:var(--s2);border-radius:8px;padding:10px 12px;margin-top:8px}
+/* heatmap */
+.hm{border-collapse:separate;border-spacing:2px;font-size:12px;width:100%}.hm th{font-weight:600;color:var(--tx2);padding:4px;text-align:center;font-size:11.5px}
+.hm th.r{text-align:left;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hm td{text-align:center;padding:6px 4px;border-radius:4px;font-variant-numeric:tabular-nums}
+/* tecnicos reporte */
+.tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:12px}
+.tc{border:1px solid var(--bd);border-radius:10px;overflow:hidden;background:var(--s1)}
+.tc h4{margin:0;padding:7px 12px;color:#fff;display:flex;justify-content:space-between;font-size:14px}
+.tc ul{list-style:none;margin:0;padding:4px 10px}.tc li{display:grid;grid-template-columns:58px 1fr 40px;gap:6px;padding:3px 0;border-bottom:1px solid var(--grid);font-size:12.5px}
+.tc li span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tc li span:last-child{text-align:right}.tc .id{color:var(--accent);font-weight:600}
+.drill{margin-top:10px;border-top:1px solid var(--grid);padding-top:8px}.drill h4{margin:0 0 4px;font-size:13px}
+#tip{position:fixed;pointer-events:none;background:#111;color:#fff;font-size:12px;padding:5px 8px;border-radius:6px;z-index:50;max-width:280px;display:none;white-space:pre-line}
+dialog{border:1px solid var(--bd);border-radius:12px;background:var(--s1);color:var(--tx);padding:0;max-width:560px;width:calc(100% - 24px)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dlg{padding:16px 18px;max-height:80vh;overflow:auto}.dlg h2{margin:0 0 8px;font-size:17px}.dlg h4{margin:14px 0 6px}
+.frm{display:grid;grid-template-columns:1fr 90px;gap:6px 12px;align-items:center;font-size:13px}.frm input,.frm select{border:1px solid var(--bd);background:var(--s1);border-radius:6px;padding:4px 6px;width:100%}
+.dlg-f{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+#drop{position:fixed;inset:0;background:rgba(42,120,214,.18);border:4px dashed var(--accent);z-index:60;display:none;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--accent);pointer-events:none}
+.foot{font-size:11.5px;color:var(--tx3);margin-top:18px}
+.fl-svg text{fill:var(--tx2);font-size:14px}
+.col2{display:flex;flex-direction:column;gap:14px;min-width:0}
+@media(max-width:640px){.rows li{grid-template-columns:12px 1fr 36px 46px}.rows .m{display:none}.hb li{grid-template-columns:90px 1fr auto}.kpi .v{font-size:24px}}
+@media print{header.top .btns,.filters,nav.tabs,.tools,.pager,.mini,.seg,dialog,#tip{display:none!important}header.top{position:static}
+section.panel{display:block!important;break-inside:auto}.card,.kpi,.tc{break-inside:avoid}body{background:#fff}.tw{max-height:none;overflow:visible}}
+</style>
+</head>
+<body>
+<div id="drop">Suelta el CSV de GLPI para cargarlo</div>
+<header class="top"><div class="wrap top-in">
+  <div class="brand"><h1>Mesa de Ayuda · UTI PAE</h1><p>Tablero GLPI · PAE / MIDIS</p></div>
+  <div class="src" id="src" role="status" aria-live="polite"><span class="dot" id="dot"></span><span id="srcTxt">Cargando…</span></div>
+  <div class="btns">
+    <button class="btn pri" id="bFile" type="button">Cargar CSV</button>
+    <button class="btn" id="bLink" type="button" title="Vincula un archivo y se actualiza solo cuando lo sobrescribas (Chrome/Edge)">Vincular archivo</button>
+    <button class="btn" id="bUrl" type="button">Desde URL</button>
+    <button class="btn" id="bSet" type="button">Ajustes</button>
+    <button class="btn" id="bTheme" type="button" aria-label="Cambiar tema">Tema</button>
+    <button class="btn" id="bPrint" type="button">Imprimir / PDF</button>
+    <input type="file" id="file" accept=".csv,text/csv" hidden>
+  </div>
+</div></header>
+<div class="filters"><div class="wrap fil-in" id="filters"></div></div>
+<div class="wrap">
+<nav class="tabs" role="tablist" id="tabs"></nav>
+<main id="main">
+  <div id="notes"></div>
+  <section class="panel" id="p-resumen"></section>
+  <section class="panel" id="p-backlog"></section>
+  <section class="panel" id="p-flujo"></section>
+  <section class="panel" id="p-demanda"></section>
+  <section class="panel" id="p-calidad"></section>
+  <section class="panel" id="p-reporte"></section>
+  <p class="foot">Pendiente = Nuevo, En curso (asignado/planificado) y En espera. Resueltos sin cerrar se informan aparte. Los tickets MODIF-DATOS/ELIM cuentan en los KPIs y gráficos pero no se listan. Un ticket con varios técnicos se cuenta una vez por técnico en rankings; totales y KPIs usan tickets únicos. Tiempo de resolución = Fecha de cierre − Fecha de apertura.</p>
+</main></div>
+<div id="tip"></div>
+<dialog id="dlgSet"><div class="dlg" id="setBody"></div></dialog>
+<dialog id="dlgUrl"><div class="dlg"><h2>Cargar CSV desde una URL</h2>
+  <p style="font-size:13px;color:var(--tx2)">Útil si el CSV se publica en un servidor interno (el servidor debe permitir CORS o servir esta página). Se vuelve a leer en cada actualización automática.</p>
+  <input id="urlIn" type="url" placeholder="https://servidor/glpi.csv" style="width:100%;border:1px solid var(--bd);background:var(--s1);border-radius:6px;padding:7px 9px">
+  <div class="dlg-f"><button class="btn" id="urlCancel" type="button">Cancelar</button><button class="btn pri" id="urlOk" type="button">Cargar</button></div></div></dialog>
+
+<script>
+const SNAP="__SNAPSHOT__";
+const SNAP_NAME="__SNAPNAME__";
+"use strict";
+/* ============ utilidades ============ */
+const DAY=864e5,HOUR=36e5;
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>n==null||isNaN(n)?"—":Number(n).toLocaleString("es-PE");
+const r1=n=>n==null?null:Math.round(n*10)/10;
+const pct=(a,b)=>b?r1(a/b*100):0;
+const ymd=ms=>new Date(ms).toISOString().slice(0,10);
+const fmtDT=ms=>{const d=new Date(ms);return d.toISOString().slice(0,10).split("-").reverse().join("/")+" "+d.toISOString().slice(11,16)};
+const median=a=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+const quant=(a,p)=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.ceil(p*s.length)-1)]};
+const fH=h=>h==null?"N/D":h>=48?r1(h/24)+" d":r1(h)+" h";
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const load=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
+const titleCase=s=>s.toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());
+const normName=s=>String(s).replace(/[\s ]+/g," ").trim().toUpperCase();
+
+/* ============ equipos (tabla del reporte de pendientes) ============ */
+const DES="Desarrollo",SOP="Soporte Técnico",INF="Infraestructura",SIN="Sin asignar";
+const TEAM_VAR={[DES]:"var(--t-des)",[INF]:"var(--t-inf)",[SOP]:"var(--t-sop)",[SIN]:"var(--t-sin)"};
+const TECH={
+"JOE JAVIER DE LA CRUZ PAREDES":["Joe De la Cruz",DES],"EDINSON REQUEJO BECERRA":["Edinson Requejo",DES],"ANGEL LUCAS HUAROTO PARRA":["Angel Huaroto",DES],
+"CESAR WILFREDO HUILLCA BUSTAMANTE":["Cesar Huillca",DES],"JUAN JOSÉ PAUCAR FUENTES":["Juan Paucar",DES],"JONATHAN HUARCAYA SALAS":["Jonathan Huarcaya",DES],
+"RAQUEL AYLAS":["Raquel Aylas",DES],"JORGE LUIS CABRERA DAVILA":["Jorge Cabrera",DES],"WALTER JHOAN SAAVEDRA SAROVIO":["Walter Saavedra",DES],
+"DIEGO ALONSO CAYO RAMIREZ":["Diego Cayo",DES],"ALEX JAVIER ALAMO MENDOZA":["Alex Alamo",DES],"JEAN MICHAEL DELGADO MALDONADO":["Jean Delgado",INF],
+"LUIS ANDERSSON VASQUEZ CABRERA":["Luis Vasquez",SOP],"MARIELA ANGELA VILA MORAN":["Mariela Vila",SOP],"OMAR ANTONIO PEÑA MORENO":["Omar Peña",SOP],
+"CARLOS ALBERTO GARCIA SOTO":["Carlos Garcia",SOP],"RENZO GALLEGOS ROMERO":["Renzo Gallegos",SOP],"CARLOS EDUARDO GRANADOS LAZARTE":["Carlos Granados",SOP],
+"CRISTIAN MAO HUAMAN MENESES":["Cristian Huaman",SOP],"JOHANNA DEL ROCIO ORELLANA VARGAS":["Johanna Orellana",SOP],"HENRY MARTIN APOLINARIO VILCARROMERO":["Henry Apolinario",SOP],
+"HUGO ROMERO OCHOA":["Hugo Romero",SOP],"FERMIN LEONARDO LEON COSQUILLO":["Fermin Leon",SOP],"EDY ALEXANDER CASTILLO SILUPU":["Edy Castillo",SOP],
+"HUMBERTO INOPE BENITES":["Humberto Inope",SOP],"JHON BEGGER INOSENCIO CHAVEZ":["Jhon Inosencio",SOP],"DENNIS PLINIO QUISPE POLLOYQUERI":["Dennis Quispe",SOP],
+"ANTONY WILIAM MONSALVE ISIDRO":["Antony Monsalve",SOP]};
+
+/* ============ configuración ============ */
+const DEF={metaPend:60,critPend:100,ageWarn:7,ageCrit:30,stale:7,resolvedStale:3,noCatGood:5,noCatBad:20,refresh:60,teamOver:{}};
+let CFG={...DEF,...load("glpi.cfg",{})};
+const S={tickets:[],now:Date.now(),srcName:"",loadedAt:0,colStats:[],filters:{period:"30",from:"",to:"",entity:"",team:"",tech:"",type:"",prio:"",q:""},
+ tab:load("glpi.tab","resumen"),gran:"auto",selTech:null,tbl:{sort:"age",dir:-1,page:0,quick:"all",showExcl:false},unknown:new Set(),handle:null,url:"",timer:null,lastMod:0,err:null};
+
+/* ============ lectura de CSV ============ */
+function parseCSV(text){
+  if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+  const rows=[];let row=[],f="",q=false;
+  for(let i=0,n=text.length;i<n;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"')q=true;else if(c===';'){row.push(f);f=""}
+    else if(c==='\n'){row.push(f);rows.push(row);row=[];f=""}else if(c!=='\r')f+=c}
+  if(f!==""||row.length){row.push(f);rows.push(row)}
+  return rows}
+const pDate=s=>{if(!s)return null;let m=/^(\d{2})-(\d{2})-(\d{4})[ T](\d{2}):(\d{2})/.exec(s);if(m)return Date.UTC(+m[3],+m[2]-1,+m[1],+m[4],+m[5]);
+  m=/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(s);return m?Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5]):null};
+const statusCode=s=>{s=String(s||"").toLowerCase();return /cerrad/.test(s)?6:/resuelt/.test(s)?5:/espera/.test(s)?4:/planific/.test(s)?3:/asignad|curso/.test(s)?2:/nuevo/.test(s)?1:6};
+function splitEntity(raw){
+  raw=String(raw||"").trim();if(!raw||raw==="PAE")return{group:"PAE (general)",unit:"PAE (general)",label:"PAE (general)"};
+  if(raw.includes(" > ")){const p=raw.split(" > ").filter(x=>x!=="PAE");const g=/sede central/i.test(p[0])?"Sede Central":/territorial/i.test(p[0])?"Unidades Territoriales":p[0]||"PAE";const u=p.slice(1).join(" › ")||p[0];return{group:g,unit:u,label:u}}
+  let r=raw.replace(/^PAE/,"");let g="PAE (general)";
+  if(/^SEDE CENTRAL/i.test(r)){g="Sede Central";r=r.replace(/^SEDE CENTRAL/i,"")}else if(/^UNIDADES TERRITORIALES/i.test(r)){g="Unidades Territoriales";r=r.replace(/^UNIDADES TERRITORIALES/i,"")}
+  r=r.replace(/Subunidad/," › Subunidad").trim()||g;return{group:g,unit:r,label:r}}
+const VOL=/VOLUMEN|VOLÚMEN|PRESTACI/;
+function fromRows(rows){
+  const hd=rows[0].map(h=>h.trim()),ix={};hd.forEach((h,i)=>{if(h&&!(h in ix))ix[h]=i});
+  for(const need of["ID","Estado","Fecha de apertura"])if(!(need in ix))throw new Error("El archivo no parece un export de GLPI: falta la columna «"+need+"».");
+  const g=(r,k)=>(k in ix?r[ix[k]]:"")||"";
+  const out=[];
+  for(let i=1;i<rows.length;i++){const r=rows[i];if(r.length<3)continue;
+    const ent=splitEntity(g(r,"Entidad")),cat=g(r,"Categoría").replace(/&#62;/g,">").trim(),title=g(r,"Título"),desc=g(r,"Descripción");
+    const tf=g(r,"Asignado a - Técnico");
+    out.push({id:String(g(r,"ID")).replace(/\D/g,""),title,group:ent.group,unit:ent.label,cat,cat1:cat?cat.split(">")[0].trim():"",
+      techs:tf?tf.split(/<br\s*\/?>/i).map(normName).filter(Boolean):[],st:statusCode(g(r,"Estado")),
+      type:g(r,"Tipo"),prio:g(r,"Prioridad"),origin:g(r,"Origen de la solicitud")||"(sin dato)",
+      opened:pDate(g(r,"Fecha de apertura")),closed:pDate(g(r,"Fecha de cierre")),modified:pDate(g(r,"Última modificación")),
+      hasSol:g(r,"Solución - Solución")!=="",vol:VOL.test((title+" "+desc).toUpperCase())||(/4A/.test((title+" "+desc).toUpperCase())&&/4B/.test((title+" "+desc).toUpperCase()))})}
+  const colStats=hd.filter(h=>h).map(h=>{let e=0;for(let i=1;i<rows.length;i++){const v=rows[i][ix[h]];if(v===undefined||v===""||v==="0 segundos")e++}return{n:h,e:pct(e,rows.length-1)}});
+  return{tickets:out,colStats}}
+async function loadSnap(){
+  const bin=Uint8Array.from(atob(SNAP),c=>c.charCodeAt(0));
+  const txt=await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+  const d=JSON.parse(txt),M=60000;
+  const tickets=d.rows.map(r=>{const e=splitEntity(d.ents[r[1]]),cat=r[2]<0?"":d.cats[r[2]];
+    return{id:String(r[0]),title:r[13]||"",group:e.group,unit:e.label,cat,cat1:cat?cat.split(">")[0].trim():"",techs:r[3].map(i=>d.techs[i]),st:r[4],
+      type:r[5]?"Incidencia":"Solicitud",prio:["Alta","Media","Baja"][r[6]],origin:d.origins[r[7]],opened:r[8]*M,closed:r[9]?r[9]*M:null,modified:r[10]*M,hasSol:!!r[11],vol:!!r[12]}});
+  return{tickets,colStats:d.cols}}
+
+/* ============ carga de datos ============ */
+function setData(res,name){
+  S.tickets=res.tickets;S.colStats=res.colStats;S.srcName=name;S.loadedAt=Date.now();S.err=null;
+  let mx=0;for(const t of S.tickets){if(t.opened>mx)mx=t.opened;if(t.modified>mx)mx=t.modified}S.now=mx||Date.now();
+  buildFilters();render()}
+async function fromText(text,name){
+  const rows=parseCSV(text);setData(fromRows(rows),name)}
+async function fromFile(file){setStatus("Leyendo "+file.name+"…","old");await new Promise(r=>setTimeout(r,20));
+  try{await fromText(await file.text(),file.name);S.lastMod=file.lastModified}catch(e){fail(e)}}
+function fail(e){S.err=e.message||String(e);setStatus("Error: "+S.err,"err");}
+async function poll(){
+  try{
+    if(S.handle){const f=await S.handle.getFile();if(f.lastModified!==S.lastMod){S.lastMod=f.lastModified;await fromText(await f.text(),f.name+" (vinculado)")}else setStatus(srcLabel(),"live")}
+    else if(S.url){const r=await fetch(S.url,{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);await fromText(await r.text(),S.url)}
+  }catch(e){setStatus("Sin actualizar: "+(e.message||e),"err")}}
+function schedule(){clearInterval(S.timer);if(S.handle||S.url)S.timer=setInterval(()=>{if(!document.hidden)poll()},Math.max(10,CFG.refresh)*1000)}
+const srcLabel=()=>"Fuente: "+S.srcName+" · corte GLPI "+fmtDT(S.now)+" · cargado "+new Date(S.loadedAt).toLocaleTimeString("es-PE",{hour:"2-digit",minute:"2-digit"})+((S.handle||S.url)?" · se actualiza cada "+CFG.refresh+" s":"");
+function setStatus(t,k){$("#srcTxt").textContent=t;const d=$("#dot");d.className="dot "+(k==="err"?"err":k==="old"?"old":(S.handle||S.url)?"live":"")}
+
+/* ============ filtros ============ */
+function techInfo(norm){
+  const ov=CFG.teamOver[norm];if(TECH[norm])return{name:TECH[norm][0],team:ov||TECH[norm][1]};
+  return{name:titleCase(norm),team:ov||SOP}}
+function buildFilters(){
+  const f=S.filters,T=S.tickets;
+  const uniq=(fn)=>[...new Set(T.map(fn).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"es"));
+  const groups={};for(const t of T){(groups[t.group]??=new Set()).add(t.unit)}
+  const techs=new Set();T.forEach(t=>t.techs.forEach(x=>techs.add(x)));
+  const tOpts=[...techs].map(n=>[n,techInfo(n).name]).sort((a,b)=>a[1].localeCompare(b[1],"es"));
+  const sel=(id,lab,opts,cur)=>`<label>${lab}<select id="${id}" data-f="${id.slice(2).toLowerCase()}">${opts}</select></label>`;
+  const o=(v,l,c)=>`<option value="${esc(v)}"${c===v?" selected":""}>${esc(l)}</option>`;
+  $("#filters").innerHTML=
+   sel("fPeriod","Periodo (flujos y demanda)",[["7","Últimos 7 días"],["14","Últimos 14 días"],["30","Últimos 30 días"],["60","Últimos 60 días"],["90","Últimos 90 días"],["all","Todo el histórico"],["custom","Rango…"]].map(([v,l])=>o(v,l,f.period)).join(""))+
+   `<label class="cust" ${f.period==="custom"?"":"hidden"}>Desde<input type="date" id="fFrom" value="${f.from}"></label><label class="cust" ${f.period==="custom"?"":"hidden"}>Hasta<input type="date" id="fTo" value="${f.to}"></label>`+
+   sel("fEntity","Entidad / unidad",o("","Todas",f.entity)+Object.keys(groups).sort().map(g=>`<optgroup label="${esc(g)}">${o("g:"+g,"Toda la "+g,f.entity)}${[...groups[g]].sort((a,b)=>a.localeCompare(b,"es")).map(u=>o("u:"+g+"|"+u,u,f.entity)).join("")}</optgroup>`).join(""))+
+   sel("fTeam","Equipo",o("","Todos",f.team)+[DES,INF,SOP].map(x=>o(x,x,f.team)).join(""))+
+   sel("fTech","Técnico",o("","Todos",f.tech)+o("__none","Sin asignar",f.tech)+tOpts.map(([n,l])=>o(n,l,f.tech)).join(""))+
+   sel("fType","Tipo",o("","Todos",f.type)+uniq(t=>t.type).map(x=>o(x,x,f.type)).join(""))+
+   sel("fPrio","Prioridad",o("","Todas",f.prio)+["Alta","Media","Baja"].map(x=>o(x,x,f.prio)).join(""))+
+   `<label class="grow">Buscar (ID, título, técnico, categoría)<input id="fQ" type="search" value="${esc(f.q)}" placeholder="Ej. SIGO, 11192, Raquel…"></label>`+
+   `<button class="btn" id="fClear" type="button">Limpiar filtros</button>`;
+  $("#filters").onchange=e=>{const t=e.target;if(t.id==="fPeriod")f.period=t.value;else if(t.id==="fFrom")f.from=t.value;else if(t.id==="fTo")f.to=t.value;
+    else if(t.id==="fEntity")f.entity=t.value;else if(t.id==="fTeam")f.team=t.value;else if(t.id==="fTech")f.tech=t.value;else if(t.id==="fType")f.type=t.value;else if(t.id==="fPrio")f.prio=t.value;
+    if(t.id==="fPeriod")document.querySelectorAll(".cust").forEach(x=>x.hidden=f.period!=="custom");S.tbl.page=0;render()};
+  let to;$("#fQ").oninput=e=>{clearTimeout(to);to=setTimeout(()=>{f.q=e.target.value;S.tbl.page=0;render()},200)};
+  $("#fClear").onclick=()=>{Object.assign(f,{entity:"",team:"",tech:"",type:"",prio:"",q:"",period:"30",from:"",to:""});S.selTech=null;S.tbl.quick="all";buildFilters();render()}}
+
+/* ============ cálculo ============ */
+const EXCL=/MODIF[- ]?DATOS|ELIM/i;
+function compute(){
+  const f=S.filters,now=S.now,q=f.q.trim().toUpperCase();S.unknown.clear();
+  const pass=t=>{
+    if(f.entity){if(f.entity.startsWith("g:")){if(t.group!==f.entity.slice(2))return false}else{const[g,u]=f.entity.slice(2).split("|");if(t.group!==g||t.unit!==u)return false}}
+    if(f.type&&t.type!==f.type)return false;if(f.prio&&t.prio!==f.prio)return false;
+    if(f.tech){if(f.tech==="__none"){if(t.techs.length)return false}else if(!t.techs.includes(f.tech))return false}
+    if(f.team&&!t.techs.some(n=>techInfo(n).team===f.team))return false;
+    if(q&&!((t.id+" "+t.title+" "+t.cat+" "+t.unit+" "+t.techs.map(n=>techInfo(n).name).join(" ")).toUpperCase().includes(q)))return false;
+    return true};
+  const F=S.tickets.filter(pass);
+  let from,to=now;
+  if(f.period==="all"){from=F.reduce((m,t)=>Math.min(m,t.opened||m),now)}
+  else if(f.period==="custom"){from=f.from?Date.parse(f.from+"T00:00:00Z"):now-30*DAY;to=f.to?Date.parse(f.to+"T23:59:59Z"):now}
+  else from=now-(+f.period)*DAY;
+  const age=t=>(now-t.opened)/DAY;
+  const backlog=F.filter(t=>t.st>=1&&t.st<=4),resolved=F.filter(t=>t.st===5);
+  const openedW=F.filter(t=>t.opened>=from&&t.opened<=to),closedW=F.filter(t=>t.closed&&t.closed>=from&&t.closed<=to);
+  return{F,backlog,resolved,openedW,closedW,from,to,age,now}}
+
+/* ============ componentes ============ */
+function tip(){const el=$("#tip");
+  document.addEventListener("mouseover",e=>{const t=e.target.closest("[data-tip]");if(!t){el.style.display="none";return}el.textContent=t.dataset.tip;el.style.display="block"});
+  document.addEventListener("mousemove",e=>{if(el.style.display==="block"){el.style.left=Math.min(innerWidth-290,e.clientX+12)+"px";el.style.top=(e.clientY+14)+"px"}})}
+const card=(title,sub,body,extra="")=>`<section class="card"><div class="card-h"><div><h3>${title}</h3>${sub?`<p class="sub">${sub}</p>`:""}</div>${extra}</div>${body}</section>`;
+const kpi=(id,l,v,tone,h)=>`<button type="button" class="kpi ${tone||""}" data-go="${id}"><div class="l">${l}</div><div class="v">${v}</div><div class="h">${h||""}</div></button>`;
+function hbars(rows,{max,fmtv,click}={}){
+  if(!rows.length)return'<div class="empty">Sin datos para los filtros actuales.</div>';
+  const m=max||Math.max(1,...rows.map(r=>r.v));
+  return'<ul class="hb">'+rows.map((r,i)=>`<li class="${click?"click":""} ${r.sel?"sel":""}" ${click?`data-i="${i}" tabindex="0"`:""} data-tip="${esc(r.tip||r.l+": "+r.v)}"><span class="nm" title="${esc(r.l)}">${esc(r.l)}</span><span class="tr"><span class="bar" style="width:${r.v/m*100}%;background:${r.c||"var(--c1)"}"></span></span><span class="vl ${r.flag?"flag":""}">${fmtv?fmtv(r):fmt(r.v)}${r.sub?` <small>${r.sub}</small>`:""}${r.flag?" +7d":""}</span></li>`).join("")+"</ul>"}
+function vbars(rows){const m=Math.max(1,...rows.map(r=>r.v));
+  return`<div class="vb">${rows.map(r=>`<div class="col" data-tip="${esc(r.l+": "+r.v)}"><b>${r.v}</b><span style="height:${r.v/m*100}%;background:${r.c}"></span></div>`).join("")}</div><div class="vl-row">${rows.map(r=>`<div>${esc(r.l)}</div>`).join("")}</div>`}
+function bucketKey(ms,g){const d=new Date(ms);if(g==="month")return d.toISOString().slice(0,7);if(g==="week"){const x=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));x.setUTCDate(x.getUTCDate()-((x.getUTCDay()+6)%7));return x.toISOString().slice(0,10)}return d.toISOString().slice(0,10)}
+function flowSeries(V,g){
+  const keys=[];let cur=V.from,end=V.to;const seen=new Set();
+  for(let t=Date.UTC(new Date(V.from).getUTCFullYear(),new Date(V.from).getUTCMonth(),new Date(V.from).getUTCDate());t<=end;t+=DAY){const k=bucketKey(t,g);if(!seen.has(k)){seen.add(k);keys.push(k)}}
+  const I=Object.fromEntries(keys.map(k=>[k,0])),O={...I};
+  V.openedW.forEach(t=>{const k=bucketKey(t.opened,g);if(k in I)I[k]++});V.closedW.forEach(t=>{const k=bucketKey(t.closed,g);if(k in O)O[k]++});
+  let s=0;return keys.map(k=>({k,i:I[k],o:O[k],s:(s+=I[k]-O[k])}))}
+function flowSVG(series){
+  if(!series.length)return'<div class="empty">Sin datos.</div>';
+  const W=900,H=300,L=44,R=44,T=12,B=30,n=series.length,iw=(W-L-R)/n;
+  const mx=Math.max(1,...series.map(d=>Math.max(d.i,d.o))),sm=Math.max(...series.map(d=>d.s),0),sn=Math.min(...series.map(d=>d.s),0),sr=(sm-sn)||1;
+  const y=v=>T+(H-T-B)*(1-v/mx),ys=v=>T+(H-T-B)*(1-(v-sn)/sr),bw=Math.max(1.5,Math.min(16,iw/2.6));
+  let g="";for(let k=0;k<=4;k++){const v=mx*k/4,yy=y(v);g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--grid)"/><text x="${L-6}" y="${yy+4}" text-anchor="end">${Math.round(v)}</text>`}
+  for(let k=0;k<=4;k++){const v=sn+sr*k/4;g+=`<text x="${W-R+6}" y="${ys(v)+4}">${Math.round(v)}</text>`}
+  if(sn<0&&sm>0)g+=`<line x1="${L}" x2="${W-R}" y1="${ys(0)}" y2="${ys(0)}" stroke="var(--axis)" stroke-dasharray="4 3"/>`;
+  const step=Math.ceil(n/9);
+  series.forEach((d,i)=>{const x=L+iw*i+iw/2;
+    g+=`<g data-tip="${d.k}\nIngresados: ${d.i}\nCerrados: ${d.o}\nSaldo acumulado: ${d.s}"><rect x="${L+iw*i}" y="${T}" width="${iw}" height="${H-T-B}" fill="transparent"/><rect x="${x-bw-.5}" y="${y(d.i)}" width="${bw}" height="${H-B-y(d.i)}" fill="var(--c1)" rx="1.5"/><rect x="${x+.5}" y="${y(d.o)}" width="${bw}" height="${H-B-y(d.o)}" fill="var(--c3)" rx="1.5"/></g>`;
+    if(i%step===0)g+=`<text x="${x}" y="${H-10}" text-anchor="middle">${d.k.length>7?d.k.slice(5):d.k}</text>`});
+  g+=`<polyline fill="none" stroke="var(--c2)" stroke-width="2.2" points="${series.map((d,i)=>(L+iw*i+iw/2)+","+ys(d.s)).join(" ")}"/>`;
+  return`<svg class="fl-svg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Ingresos, cierres y saldo acumulado">${g}</svg><div class="leg"><span><i style="background:var(--c1)"></i>Ingresados</span><span><i style="background:var(--c3)"></i>Cerrados</span><span><i style="background:var(--c2)"></i>Saldo acumulado (eje derecho)</span></div>`}
+function table(cols,rows,{sortKey,dir,onSort}={}){
+  return`<div class="tw"><table class="dt"><thead><tr>${cols.map(c=>`<th class="${c.num?"num":""}" data-k="${c.k}" ${sortKey===c.k?`aria-sort="${dir>0?"ascending":"descending"}"`:""} tabindex="0">${c.l}${sortKey===c.k?(dir>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>${rows.length?rows.map(r=>`<tr>${cols.map(c=>`<td class="${c.num?"num":""} ${c.cls||""}">${c.f?c.f(r):esc(r[c.k])}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${cols.length}" class="empty">Sin resultados.</td></tr>`}</tbody></table></div>`}
+const csvEsc=v=>{v=String(v??"");return/[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+function download(name,text,mime="text/csv"){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+text],{type:mime+";charset=utf-8"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+
+/* ============ lógica de negocio: técnicos y alertas ============ */
+function techRanking(V){
+  const m=new Map();
+  for(const t of V.backlog){
+    const ps=t.techs.length?t.techs.map(techInfo):[{name:SIN,team:SIN}];
+    for(const p of ps){if(!m.has(p.name))m.set(p.name,{name:p.name,team:p.team,n:0,max:0,list:[],norm:t.techs.find(x=>techInfo(x).name===p.name)||""});
+      const r=m.get(p.name);r.n++;r.max=Math.max(r.max,V.age(t));if(!EXCL.test(t.title))r.list.push({id:t.id,title:t.title,d:Math.round(V.age(t)),st:t.st})}}
+  return[...m.values()].map(r=>({...r,max:Math.round(r.max),list:r.list.sort((a,b)=>b.d-a.d).slice(0,5)})).sort((a,b)=>b.n-a.n||b.max-a.max)}
+function kpisOf(V){
+  const b=V.backlog,n=b.length,over=b.filter(t=>V.age(t)>CFG.ageWarn).length,mx=n?Math.round(Math.max(...b.map(V.age))):0,
+   stale=b.filter(t=>(V.now-t.modified)/DAY>CFG.stale).length,sin=b.filter(t=>!t.techs.length).length,today=ymd(V.now);
+  const oT=V.F.filter(t=>t.opened&&ymd(t.opened)===today).length,cT=V.F.filter(t=>t.closed&&ymd(t.closed)===today).length;
+  const nc=V.openedW.filter(t=>!t.cat).length,ncp=pct(nc,V.openedW.length);
+  const wait7=b.filter(t=>t.st===4&&V.age(t)>CFG.ageWarn).length,res3=V.resolved.filter(t=>(V.now-t.modified)/DAY>CFG.resolvedStale).length;
+  return{n,over,mx,stale,sin,oT,cT,nc,ncp,wait7,res3,over30:b.filter(t=>V.age(t)>CFG.ageCrit).length,
+    tPend:n<=CFG.metaPend?"good":n<=CFG.critPend?"warning":"critical",tOver:over===0?"good":pct(over,n)<=10?"warning":"critical",
+    tMx:mx>CFG.ageCrit?"critical":mx>CFG.ageWarn?"warning":"good",tNc:ncp<CFG.noCatGood?"good":ncp<=CFG.noCatBad?"warning":"critical"}}
+const QUICK={all:"Todos",sin:"Sin asignar",age7:"> umbral de antigüedad",age30:"> umbral crítico",stale:"Sin actualizar",wait7:"En espera > umbral"};
+function conclusion(V,K,rank){
+  const L=[];const oldest=V.backlog.filter(t=>!EXCL.test(t.title)).sort((a,b)=>V.age(b)-V.age(a)).slice(0,2);
+  L.push(`Hay <b>${K.n}</b> tickets pendientes y <b>${K.over}</b> llevan más de ${CFG.ageWarn} días.`);
+  if(oldest.length)L.push("Los casos más antiguos son "+oldest.map(t=>`<b>#${t.id}</b> (${Math.round(V.age(t))} días)`).join(" y ")+".");
+  const vol=V.backlog.filter(t=>t.vol).length;if(vol>0)L.push("Los tickets pendientes de volúmenes (Anexos 4A/4B) y casuísticas similares han sido derivados para ser contestados de acuerdo con el procedimiento a seguir.");
+  if(K.sin>0)L.unshift(`<b>Urgente:</b> hay ${K.sin} ticket(s) sin técnico asignado.`);
+  let rec;
+  if(K.sin>0)rec="Asignar hoy los tickets sin responsable y luego atender los más antiguos.";
+  else if(K.over>0)rec=`Cerrar esta semana los ${K.over} casos de más de ${CFG.ageWarn} días, empezando por los dos más antiguos${rank[0]?` y apoyando a ${rank[0].name}, que concentra más pendientes`:""}.`;
+  else rec="Mantener el ritmo: no hay casos vencidos por antigüedad.";
+  const top=rank.find(r=>r.name!==SIN);
+  return{lines:L,rec,top,vol,txt:L.join(" ").replace(/<[^>]+>/g,"")+"\nRecomendación: "+rec}}
+
+/* ============ paneles ============ */
+function pResumen(V,K,rank){
+  const C=conclusion(V,K,rank);
+  const al=[["sin","Sin técnico asignado",K.sin,K.sin>0?"critical":"good","Debe ser 0"],["age30",`Casos con más de ${CFG.ageCrit} días`,K.over30,K.over30>0?"critical":"good","Escalar a jefatura"],
+   ["age7",`Casos con más de ${CFG.ageWarn} días`,K.over,K.tOver,"Meta común: cerrarlos esta semana"],["stale",`Sin actualizar > ${CFG.stale} días`,K.stale,K.stale>0?"critical":"good","Pedir avance al técnico"],
+   ["wait7",`En espera > ${CFG.ageWarn} días`,K.wait7,K.wait7>0?"warning":"good","Destrabar o confirmar con el usuario"],["res",`Resueltos sin movimiento > ${CFG.resolvedStale} días`,K.res3,K.res3>0?"warning":"good","Confirmar cierre"],
+   ["cat","Tickets sin categoría (periodo)",K.ncp+"%",K.tNc,"Meta < "+CFG.noCatGood+"%"]];
+  const trend=flowSeries(V,"day").slice(-14);
+  return`<div class="grid kpis">
+   ${kpi("pend","Tickets pendientes",K.n,K.tPend,"Meta ≤ "+CFG.metaPend)}${kpi("sin","Sin técnico asignado",K.sin,K.sin>0?"critical":"good","Debe ser 0")}
+   ${kpi("age7",`Casos con más de ${CFG.ageWarn} días`,K.over,K.tOver,"Meta 0")}${kpi("age30","Antigüedad máxima",K.mx+" d",K.tMx,"Escalar si > "+CFG.ageCrit+" d")}
+   ${kpi("stale",`Sin actualizar > ${CFG.stale} días`,K.stale,K.stale>0?"critical":"good","Pedir avance")}
+   ${kpi("flujo","Hoy: ingresados / cerrados",K.oT+" / "+K.cT,K.oT>K.cT?"warning":"good",ymd(V.now))}</div>
+  <div class="grid g2">
+   ${card("Alertas operativas","Clic en una alerta para ver los tickets en la tabla",`<ul class="alerts">${al.map(a=>`<li><button type="button" class="${a[3]}" data-go="${a[0]}"><span><b>${a[1]}</b><small>${a[4]}</small></span><span></span><span class="n">${a[2]}</span></button></li>`).join("")}</ul>`)}
+   ${card("Conclusión y recomendación","Generada con las reglas del reporte de pendientes",`<div class="concl">${C.lines.map(l=>`<p>${l}</p>`).join("")}<div class="box"><b>Recomendación:</b> ${C.rec}</div></div>${C.top?`<div class="callout"><b>Prioridad de la mesa de ayuda</b><small>${esc(C.top.name)} concentra el mayor número de pendientes (${C.top.n} tickets, ${C.top.max} días el más antiguo).</small></div>`:""}`,`<button class="mini" id="bCopy" type="button">Copiar</button>`)}
+   ${card("Pendientes por antigüedad","Días desde la apertura · rojo = más de "+CFG.ageWarn+" días",ageChart(V))}
+   ${card("Ingresos vs. cierres · últimos 14 días","Saldo acumulado "+trend.reduce((s,d)=>s+d.i-d.o,0),flowSVG(trend))}
+  </div>`}
+function ageChart(V){
+  const B=[["0–2 días",2],["3–7 días",7],["8–15 días",15],["16–30 días",30],["Más de 30 días",1e9]],c=B.map(()=>0);
+  V.backlog.forEach(t=>{const a=V.age(t);c[B.findIndex(b=>a<=b[1])]++});
+  return vbars(B.map((b,i)=>({l:b[0],v:c[i],c:b[1]>CFG.ageWarn&&(i===0||B[i-1][1]>=CFG.ageWarn)||b[1]>CFG.ageWarn&&B[i-1][1]>=CFG.ageWarn?"var(--crit)":"var(--c1)"})))}
+function pBacklog(V,K,rank){
+  const stC={1:"var(--c5)",2:"var(--c1)",3:"var(--c7)",4:"var(--c4)"},stL={1:"Nuevo",2:"En curso (asignado)",3:"En curso (planificado)",4:"En espera"};
+  const sts=[1,2,3,4].map(id=>{const r=V.backlog.filter(t=>t.st===id);return{id,n:r.length,p:pct(r.length,V.backlog.length),max:r.length?Math.round(Math.max(...r.map(V.age))):0}});
+  const teams=new Map();
+  for(const t of V.backlog){const ps=t.techs.length?t.techs.map(techInfo):[{name:SIN,team:SIN}];for(const tm of new Set(ps.map(p=>p.team))){if(!teams.has(tm))teams.set(tm,{team:tm,n:0,o:0,techs:new Set()});const r=teams.get(tm);r.n++;if(V.age(t)>CFG.ageWarn)r.o++}
+    ps.forEach(p=>p.team!==SIN&&teams.get(p.team).techs.add(p.name))}
+  const tl=[...teams.values()].sort((a,b)=>b.n-a.n);
+  const sel=rank.find(r=>r.name===S.selTech);
+  return`<div class="grid g2"><div class="col2">
+   ${card("Pendientes por antigüedad","Rojo = más de "+CFG.ageWarn+" días",ageChart(V))}
+   ${card("Pendientes por estado","Dónde está el trabajo: en atención, detenido o por cerrar",
+     `<div class="stack">${sts.filter(s=>s.n).map(s=>`<span style="width:${s.p}%;background:${stC[s.id]}" data-tip="${stL[s.id]}: ${s.n}"></span>`).join("")}</div><ul class="rows">${sts.map(s=>`<li><i style="background:${stC[s.id]}"></i><span>${stL[s.id]}</span><span class="n">${s.n}</span><span class="p">${s.p}%</span><span class="m ${s.max>CFG.ageWarn?"flag":""}">${s.n?"máx "+s.max+" d":"—"}</span></li>`).join("")}</ul>
+      <div class="callout ${K.res3>0?"warning":"good"}"><b>${V.resolved.length}</b> resueltos sin cerrar<small>${K.res3>0?K.res3+" llevan más de "+CFG.resolvedStale+" días sin movimiento: confirmar cierre":"Ninguno supera "+CFG.resolvedStale+" días sin movimiento"}</small></div>`)}
+</div><div class="col2">
+   ${card("Pendientes por técnico","Color por equipo · rojo y +7d si su caso más antiguo supera el umbral · clic para ver sus 5 más antiguos",
+     `<div class="leg">${[SOP,INF,DES].map(t=>`<span><i style="background:${TEAM_VAR[t]}"></i>${t}</span>`).join("")}${rank.some(r=>r.team===SIN)?`<span><i style="background:var(--t-sin)"></i>Sin asignar</span>`:""}</div>`+
+     hbars(rank.map(r=>({l:r.name,v:r.n,c:TEAM_VAR[r.team],sub:`(máx ${r.max}d)`,flag:r.max>CFG.ageWarn,sel:r.name===S.selTech,tip:`${r.name} · ${r.team}\n${r.n} pendientes · más antiguo ${r.max} d`})),{click:true})+
+     (sel?`<div class="drill"><h4>Más antiguos de ${esc(sel.name)}</h4>${sel.list.length?sel.list.map(o=>`<div class="tc"><ul><li><span class="id">#${o.id}</span><span title="${esc(o.title)}">${esc(o.title)}</span><span class="${o.d>CFG.ageWarn?"flag":""}">${o.d}d</span></li></ul></div>`).join(""):'<div class="empty">Sin casos listables (MODIF-DATOS/ELIM no se listan).</div>'}<button class="mini" id="bFilterTech" type="button">Filtrar el tablero por este técnico</button></div>`:""),
+     `<button class="mini" id="bClearSel" type="button" ${sel?"":"hidden"}>Cerrar detalle</button>`)}
+   ${card("Carga por equipo","Un ticket con varios equipos cuenta en cada uno",
+     hbars(tl.map(t=>({l:t.team,v:t.n,c:TEAM_VAR[t.team],sub:(t.techs.size?t.techs.size+" téc. · "+r1(t.n/t.techs.size)+" c/u · ":"")+t.o+" >"+CFG.ageWarn+"d"}))))}
+  </div>
+  </div>
+  <div style="margin-top:14px">${card("Detalle de pendientes","Los tickets MODIF-DATOS/ELIM se ocultan por defecto",tblBody(V,K))}</div>`}
+function tblRows(V){
+  const T=S.tbl,now=V.now;
+  let r=V.backlog.map(t=>({...t,age:Math.round(V.age(t)*10)/10,idle:Math.round((now-t.modified)/DAY*10)/10,tech:t.techs.length?t.techs.map(n=>techInfo(n).name).join(", "):SIN,stl:{1:"Nuevo",2:"En curso (asignado)",3:"En curso (planificado)",4:"En espera"}[t.st]}));
+  const hidden=r.filter(x=>EXCL.test(x.title)).length;if(!T.showExcl)r=r.filter(x=>!EXCL.test(x.title));
+  const qk=T.quick;if(qk==="sin")r=r.filter(x=>!x.techs.length);else if(qk==="age7")r=r.filter(x=>x.age>CFG.ageWarn);else if(qk==="age30")r=r.filter(x=>x.age>CFG.ageCrit);
+  else if(qk==="stale")r=r.filter(x=>x.idle>CFG.stale);else if(qk==="wait7")r=r.filter(x=>x.st===4&&x.age>CFG.ageWarn);
+  const k=T.sort;r.sort((a,b)=>{const x=a[k],y=b[k];return(typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y),"es",{numeric:true}))*T.dir});
+  return{r,hidden}}
+function tblBody(V,K){
+  const T=S.tbl,{r,hidden}=tblRows(V),per=20,pages=Math.max(1,Math.ceil(r.length/per));T.page=Math.min(T.page,pages-1);
+  const cols=[{k:"id",l:"ID",f:x=>`<b style="color:var(--accent)">#${x.id}</b>`},{k:"title",l:"Título",cls:"ttl",f:x=>`<span title="${esc(x.title)}">${esc(x.title.length>90?x.title.slice(0,90)+"…":x.title)}</span>`},
+   {k:"stl",l:"Estado",f:x=>`<span class="chip">${x.stl}</span>`},{k:"tech",l:"Técnico(s)"},{k:"unit",l:"Entidad"},{k:"cat",l:"Categoría",f:x=>esc(x.cat||"— sin categoría —")},{k:"prio",l:"Prioridad"},
+   {k:"age",l:"Antigüedad (d)",num:true,f:x=>`<span class="${x.age>CFG.ageWarn?"flag":""}">${x.age}</span>`},{k:"idle",l:"Sin mover (d)",num:true,f:x=>`<span class="${x.idle>CFG.stale?"flag":""}">${x.idle}</span>`}];
+  return`<div class="chips" role="group" aria-label="Filtro rápido">${Object.entries(QUICK).map(([k,l])=>`<button type="button" data-q="${k}" aria-pressed="${T.quick===k}">${l}</button>`).join("")}</div>
+   <div class="tools"><span>${r.length} ticket(s)${hidden&&!T.showExcl?` · ${hidden} MODIF-DATOS/ELIM ocultos`:""}</span><label><input type="checkbox" id="tShowExcl" ${T.showExcl?"checked":""}> Mostrar MODIF-DATOS/ELIM</label><button class="mini" id="tCsv" type="button">Exportar CSV</button></div>
+   ${table(cols,r.slice(T.page*per,T.page*per+per),{sortKey:T.sort,dir:T.dir})}
+   <div class="pager"><button class="mini" id="pPrev" type="button" ${T.page===0?"disabled":""}>‹ Anterior</button><span>Página ${T.page+1} de ${pages}</span><button class="mini" id="pNext" type="button" ${T.page>=pages-1?"disabled":""}>Siguiente ›</button></div>`}
+function pFlujo(V,K){
+  const span=(V.to-V.from)/DAY,gran=S.gran==="auto"?(span<=45?"day":span<=200?"week":"month"):S.gran,ser=flowSeries(V,gran);
+  const hrs=V.closedW.filter(t=>t.opened&&t.closed>=t.opened).map(t=>(t.closed-t.opened)/HOUR);
+  const prev=V.F.filter(t=>t.closed&&t.closed<V.from&&t.closed>=V.from-(V.to-V.from)&&t.opened&&t.closed>=t.opened).map(t=>(t.closed-t.opened)/HOUR);
+  const med=median(hrs),mp=median(prev),chg=med!=null&&mp?r1((med-mp)/mp*100):null;
+  const grp=(fn)=>{const m=new Map();V.closedW.filter(t=>t.opened&&t.closed>=t.opened).forEach(t=>{const k=fn(t);if(!k)return;(m.get(k)||m.set(k,[]).get(k)).push((t.closed-t.opened)/HOUR)});return m};
+  const byP=["Alta","Media","Baja"].map(p=>({k:p,a:grp(t=>t.prio).get(p)||[]})),meds=byP.filter(x=>x.a.length>=5).map(x=>median(x.a));
+  const noDiff=meds.length>=2&&Math.max(...meds)/Math.min(...meds)<1.3;
+  const byT=[...grp(t=>t.type)].map(([k,a])=>({k,a}));
+  const tm=new Map();V.closedW.filter(t=>t.opened&&t.closed>=t.opened).forEach(t=>t.techs.forEach(n=>{const nm=techInfo(n).name;(tm.get(nm)||tm.set(nm,[]).get(nm)).push((t.closed-t.opened)/HOUR)}));
+  const trows=[...tm].map(([k,a])=>({k,n:a.length,med:median(a),p90:quant(a,.9)})).filter(x=>x.n>=5).sort((a,b)=>b.n-a.n);
+  const hist=[["≤ 4 h",4],["4–24 h",24],["1–2 días",48],["2–7 días",168],["> 7 días",1e9]].map((b,i,A)=>({l:b[0],v:hrs.filter(h=>h<=b[1]&&(i===0||h>A[i-1][1])).length,c:i>=3?"var(--c4)":"var(--c3)"}));
+  const tot=ser.reduce((s,d)=>[s[0]+d.i,s[1]+d.o],[0,0]);
+  return`<div class="grid kpis">
+    ${kpi("x","Ingresados en el periodo",fmt(tot[0]),"","")}${kpi("x","Cerrados en el periodo",fmt(tot[1]),"","")}
+    ${kpi("x","Saldo del periodo",(tot[0]-tot[1]>0?"+":"")+(tot[0]-tot[1]),tot[0]>tot[1]?"warning":"good",tot[0]>tot[1]?"El backlog crece":"El backlog baja")}
+    ${kpi("x","Tasa de cierre",pct(tot[1],tot[0])+"%",pct(tot[1],tot[0])>=98?"good":"warning","Cerrados ÷ ingresados")}
+    ${kpi("x","Resolución (mediana)",fH(med),chg!=null&&chg>25?"critical":"good",`P90 ${fH(quant(hrs,.9))}${chg!=null?` · ${chg>0?"▲":"▼"} ${Math.abs(chg)}% vs. periodo previo`:""}`)}
+    ${kpi("x","Resolución (promedio)",fH(hrs.length?hrs.reduce((a,b)=>a+b,0)/hrs.length:null),"",hrs.length+" tickets cerrados")}</div>
+   <div class="grid">${card("Ingresos vs. cierres","Barras por periodo y línea de saldo acumulado · "+fmtDT(V.from).slice(0,10)+" a "+fmtDT(V.to).slice(0,10),flowSVG(ser),
+     `<div class="seg" role="group" aria-label="Agrupación">${[["auto","Auto"],["day","Diario"],["week","Semanal"],["month","Mensual"]].map(([k,l])=>`<button type="button" data-gran="${k}" aria-pressed="${S.gran===k}">${l}</button>`).join("")}</div>`)}</div>
+   <div class="grid g2" style="margin-top:14px">
+    ${card("Tiempo de resolución por prioridad","Mediana (apertura → cierre)",hbars(byP.map(x=>({l:x.k,v:x.a.length?median(x.a):0,c:"var(--c1)",sub:`n=${x.a.length}`})),{fmtv:r=>fH(r.v)})+(noDiff?'<div class="note" style="margin-top:10px">La prioridad casi no cambia el tiempo de resolución: conviene revisar cómo se asigna.</div>':""))}
+    ${card("Tiempo de resolución por tipo","Mediana (apertura → cierre)",hbars(byT.map(x=>({l:x.k,v:median(x.a),c:"var(--c7)",sub:`n=${x.a.length}`})),{fmtv:r=>fH(r.v)}))}
+    ${card("Distribución del tiempo de resolución","Tickets cerrados en el periodo",hbars(hist))}
+    ${card("Tiempo de resolución por técnico","Solo técnicos con 5 o más cierres en el periodo",table([{k:"k",l:"Técnico"},{k:"n",l:"Cerrados",num:true},{k:"med",l:"Mediana",num:true,f:x=>fH(x.med)},{k:"p90",l:"P90",num:true,f:x=>fH(x.p90)}],trows))}
+   </div>`}
+function pDemanda(V,K){
+  const cnt=(arr,fn)=>{const m=new Map();arr.forEach(t=>{const k=fn(t);if(k!=null)m.set(k,(m.get(k)||0)+1)});return[...m].sort((a,b)=>b[1]-a[1])};
+  const N=V.openedW.length,top=(a,n)=>a.slice(0,n).map(([l,v])=>({l,v,sub:pct(v,N)+"%"}));
+  const ent=cnt(V.openedW,t=>t.unit),cat=cnt(V.openedW,t=>t.cat1||"Sin categoría");
+  const app=cnt(V.openedW.filter(t=>t.cat),t=>{const p=t.cat.split(">").map(x=>x.trim()).filter(Boolean);return p.length>1?p[p.length-1]:null});
+  const grp=cnt(V.openedW,t=>t.group),org=cnt(V.openedW,t=>t.origin),typ=cnt(V.openedW,t=>t.type),pri=cnt(V.openedW,t=>t.prio);
+  const rg=grp.slice(0,6).map(g=>g[0]),cs=cat.slice(0,6).map(c=>c[0]),hm=new Map();V.openedW.forEach(t=>{const k=t.group+"|"+(t.cat1||"Sin categoría");hm.set(k,(hm.get(k)||0)+1)});
+  const hmax=Math.max(1,...hm.values());
+  const heat=`<table class="hm"><thead><tr><th></th>${cs.map(c=>`<th title="${esc(c)}">${esc(c.length>18?c.slice(0,17)+"…":c)}</th>`).join("")}</tr></thead><tbody>${rg.map(g=>`<tr><th class="r" title="${esc(g)}">${esc(g)}</th>${cs.map(c=>{const v=hm.get(g+"|"+c)||0;return`<td data-tip="${esc(g+" · "+c+": "+v)}" style="background:color-mix(in srgb,var(--c1) ${Math.round(v/hmax*85)}%,transparent);color:${v/hmax>.5?"#fff":"var(--tx)"}">${v||""}</td>`}).join("")}</tr>`).join("")}</tbody></table>`;
+  const pc={Alta:"var(--crit)",Media:"var(--c4)",Baja:"var(--c3)"};
+  return`<p class="sub" style="margin:0 0 10px">Tickets ingresados en el periodo seleccionado: <b>${fmt(N)}</b></p><div class="grid g2">
+   ${card("Entidades / unidades con más tickets","Top 10",hbars(top(ent,10)))}
+   ${card("Categorías principales (nivel 1)","Incluye tickets sin categoría",hbars(top(cat,8).map(r=>({...r,c:r.l==="Sin categoría"?"var(--crit)":"var(--c1)"}))))}
+   ${card("Aplicativos / subcategorías más frecuentes","Último nivel de la categoría (ej. SIGO, SGD)",hbars(top(app,10).map(r=>({...r,c:"var(--c7)"}))))}
+   ${card("Entidad × categoría","Mapa de calor (grupos de entidad × categorías principales)",heat)}
+   ${card("Canal de ingreso","Origen de la solicitud",hbars(top(org,8).map(r=>({...r,c:"var(--c3)"}))))}
+   <div class="col2">${card("Tipo","",hbars(top(typ,4).map(r=>({...r,c:"var(--c5)"}))))}${card("Prioridad","",hbars(pri.map(([l,v])=>({l,v,sub:pct(v,N)+"%",c:pc[l]||"var(--c1)"}))))}${card("Grupo","",hbars(top(grp,5)))}</div>
+  </div>`}
+function pCalidad(V,K){
+  const F=V.F,N=F.length,closed=F.filter(t=>t.st===6),noTech=closed.filter(t=>!t.techs.length).length,noSol=closed.filter(t=>!t.hasSol).length;
+  const items=[["Sin categoría",F.filter(t=>!t.cat).length,N,CFG.noCatGood,CFG.noCatBad],["Cerrados sin técnico",noTech,closed.length,2,10],["Cerrados sin solución",noSol,closed.length,5,15],
+   ["Pendientes sin técnico",K.sin,K.n,0.01,5]];
+  const cs=[...S.colStats].sort((a,b)=>b.e-a.e);
+  return`<div class="grid g2">
+   ${card("Completitud de los datos filtrados","% de registros con el campo vacío · umbral verde/rojo según Ajustes",hbars(items.map(([l,a,b,g,bad])=>{const p=pct(a,b);return{l,v:p,c:p<=g?"var(--good)":p<=bad?"var(--warn)":"var(--crit)",sub:`${fmt(a)} de ${fmt(b)}`,tip:l+": "+p+"%"}}),{max:100,fmtv:r=>r.v+"%"}))}
+   ${card("Columnas del export de GLPI","% vacío en el archivo cargado (todas las filas, sin filtros). Un campo 100 % vacío no se puede usar en indicadores.",table([{k:"n",l:"Columna"},{k:"e",l:"% vacío",num:true,f:x=>`<span class="${x.e>=95?"flag":""}">${x.e}%</span>`}],cs))}
+  </div>
+  <div class="note" style="margin-top:14px">Recomendación: hacer obligatoria la <b>categoría</b> al registrar o cerrar, y activar los campos que hoy llegan vacíos (SLA, fecha de solución, tipo de solución, ubicación) para habilitar los indicadores de cumplimiento de SLA y tiempos por etapa.</div>`}
+function pReporte(V,K,rank){
+  const C=conclusion(V,K,rank);
+  const maxN=Math.max(1,...rank.map(r=>r.n));
+  return`<div class="grid kpis">${kpi("x","Tickets pendientes",K.n,"","")}${kpi("x","Técnicos con pendientes",rank.filter(r=>r.name!==SIN).length,"","")}${kpi("x","Antigüedad máxima (días)",K.mx,K.tMx,"")}${kpi("x","Casos con más de "+CFG.ageWarn+" días",K.over,K.tOver,"")}</div>
+  <div class="grid g2">${card("Ranking de técnicos por tickets pendientes","Corte: "+fmtDT(V.now),hbars(rank.map(r=>({l:r.name,v:r.n,c:TEAM_VAR[r.team],sub:`(máx ${r.max}d)`,flag:r.max>CFG.ageWarn}))))}
+   ${card("Conclusión y recomendación","",`<div class="concl">${C.lines.map(l=>`<p>${l}</p>`).join("")}<div class="box"><b>Recomendación:</b> ${C.rec}</div></div>${S.unknown.size?`<div class="note" style="margin-top:10px">Técnicos sin equipo asignado (se muestran en Soporte Técnico): ${[...S.unknown].map(esc).join(", ")}. Confirma su equipo en Ajustes.</div>`:""}`)}</div>
+  <h3 style="margin:18px 0 8px">5 tickets más antiguos por técnico</h3>
+  <div class="tcards">${rank.map(r=>`<div class="tc"><h4 style="background:${TEAM_VAR[r.team]}"><span>${esc(r.name)}</span><span>${r.n} pendiente${r.n===1?"":"s"}</span></h4><ul>${r.list.length?r.list.map(o=>`<li><span class="id">#${o.id}</span><span title="${esc(o.title)}">${esc(o.title)}${o.st===4?" · espera":o.st===3?" · planif.":""}</span><span class="${o.d>CFG.ageWarn?"flag":""}">${o.d}d</span></li>`).join(""):'<li><span></span><span style="color:var(--tx3)">Sin casos listables</span><span></span></li>'}</ul></div>`).join("")}</div>
+  <p class="foot">No se listan los tickets MODIF-DATOS ni ELIM. Un ticket con varios técnicos aparece en la lista de cada uno.</p>`}
+
+/* ============ render principal ============ */
+const TABS=[["resumen","Resumen"],["backlog","Backlog y técnicos"],["flujo","Flujo y tiempos"],["demanda","Demanda"],["calidad","Calidad de datos"],["reporte","Reporte por técnico"]];
+let V,K,RANK;
+function render(){
+  if(!S.tickets.length){$("#notes").innerHTML='<div class="note">No hay tickets cargados.</div>';return}
+  V=compute();K=kpisOf(V);RANK=techRanking(V);
+  S.unknown=new Set(V.backlog.flatMap(t=>t.techs).filter(n=>!TECH[n]&&!CFG.teamOver[n]));
+  $("#tabs").innerHTML=TABS.map(([k,l])=>`<button class="tab" role="tab" data-t="${k}" aria-selected="${S.tab===k}">${l}</button>`).join("");
+  $("#notes").innerHTML=(S.unknown.size?`<div class="note">Técnicos sin equipo asignado (se muestran como Soporte Técnico): <b>${[...S.unknown].map(esc).join(", ")}</b>. <button class="mini" id="bTeams" type="button">Asignar equipo</button></div>`:"")+(S.err?`<div class="note crit">${esc(S.err)}</div>`:"");
+  const P={resumen:()=>pResumen(V,K,RANK),backlog:()=>pBacklog(V,K,RANK),flujo:()=>pFlujo(V,K),demanda:()=>pDemanda(V,K),calidad:()=>pCalidad(V,K),reporte:()=>pReporte(V,K,RANK)};
+  for(const[k]of TABS){const el=$("#p-"+k);el.classList.toggle("on",S.tab===k||matchMedia("print").matches);el.innerHTML=P[k]()}
+  setStatus(srcLabel(),"");bindDyn()}
+function go(key){
+  const m={pend:["backlog","all"],sin:["backlog","sin"],age7:["backlog","age7"],age30:["backlog","age30"],stale:["backlog","stale"],wait7:["backlog","wait7"],res:["backlog","all"],cat:["calidad"],flujo:["flujo"]};
+  const t=m[key];if(!t)return;S.tab=t[0];save("glpi.tab",S.tab);if(t[1]){S.tbl.quick=t[1];S.tbl.page=0}render();window.scrollTo({top:0,behavior:"smooth"})}
+function bindDyn(){
+  document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
+  document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;save("glpi.tab",S.tab);render()});
+  document.querySelectorAll("[data-gran]").forEach(b=>b.onclick=()=>{S.gran=b.dataset.gran;render()});
+  document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{S.tbl.quick=b.dataset.q;S.tbl.page=0;render()});
+  const hb=$("#p-backlog .hb");if(hb)hb.onclick=e=>{const li=e.target.closest("li[data-i]");if(!li)return;const r=RANK[+li.dataset.i];S.selTech=S.selTech===r.name?null:r.name;render()};
+  const c=$("#bClearSel");if(c)c.onclick=()=>{S.selTech=null;render()};
+  const ft=$("#bFilterTech");if(ft)ft.onclick=()=>{const r=RANK.find(x=>x.name===S.selTech);if(r){S.filters.tech=r.name===SIN?"__none":r.norm;buildFilters();render()}};
+  const te=$("#tShowExcl");if(te)te.onchange=e=>{S.tbl.showExcl=e.target.checked;render()};
+  document.querySelectorAll(".dt th[data-k]").forEach(th=>{const f=()=>{const k=th.dataset.k;if(!$("#p-backlog").contains(th))return;S.tbl.dir=S.tbl.sort===k?-S.tbl.dir:(["age","idle"].includes(k)?-1:1);S.tbl.sort=k;render()};th.onclick=f;th.onkeydown=e=>{if(e.key==="Enter")f()}});
+  const pp=$("#pPrev");if(pp)pp.onclick=()=>{S.tbl.page--;render()};const pn=$("#pNext");if(pn)pn.onclick=()=>{S.tbl.page++;render()};
+  const tc=$("#tCsv");if(tc)tc.onclick=()=>{const{r}=tblRows(V);download("pendientes_glpi_"+ymd(V.now)+".csv",["ID","Título","Estado","Técnico(s)","Entidad","Categoría","Prioridad","Antigüedad (d)","Sin mover (d)"].join(";")+"\n"+r.map(x=>[x.id,x.title,x.stl,x.tech,x.unit,x.cat,x.prio,x.age,x.idle].map(csvEsc).join(";")).join("\n"))};
+  const cp=$("#bCopy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(conclusion(V,K,RANK).txt);cp.textContent="Copiado ✓"}catch(e){cp.textContent="No se pudo copiar"}};
+  const bt=$("#bTeams");if(bt)bt.onclick=openSettings}
+
+/* ============ ajustes ============ */
+function openSettings(){
+  const nums=[["metaPend","Meta de pendientes (verde hasta)"],["critPend","Pendientes en rojo desde"],["ageWarn","Alerta de antigüedad (días)"],["ageCrit","Antigüedad crítica (días)"],["stale","Sin actualizar (días)"],["resolvedStale","Resueltos sin mover (días)"],["noCatGood","Sin categoría: verde hasta (%)"],["noCatBad","Sin categoría: rojo desde (%)"],["refresh","Actualización automática (segundos)"]];
+  const unk=[...S.unknown];
+  $("#setBody").innerHTML=`<h2>Ajustes</h2><div class="frm">${nums.map(([k,l])=>`<label for="s_${k}">${l}</label><input id="s_${k}" type="number" min="0" value="${CFG[k]}">`).join("")}</div>
+   <h4>Equipo de técnicos nuevos</h4>${unk.length?`<div class="frm">${unk.map(n=>`<label for="tm_${esc(n)}">${esc(titleCase(n))}</label><select data-tm="${esc(n)}" id="tm_${esc(n)}">${[SOP,INF,DES].map(t=>`<option ${(CFG.teamOver[n]||SOP)===t?"selected":""}>${t}</option>`).join("")}</select>`).join("")}</div>`:'<p style="color:var(--tx3);font-size:13px">Todos los técnicos tienen equipo asignado.</p>'}
+   <p style="font-size:12px;color:var(--tx3)">Los ajustes se guardan en este navegador.</p>
+   <div class="dlg-f"><button class="btn" id="sReset" type="button">Restablecer</button><button class="btn" id="sCancel" type="button">Cancelar</button><button class="btn pri" id="sSave" type="button">Guardar</button></div>`;
+  $("#dlgSet").showModal();
+  $("#sCancel").onclick=()=>$("#dlgSet").close();
+  $("#sReset").onclick=()=>{CFG={...DEF,teamOver:{}};save("glpi.cfg",CFG);$("#dlgSet").close();schedule();buildFilters();render()};
+  $("#sSave").onclick=()=>{nums.forEach(([k])=>{const v=+$("#s_"+k).value;if(!isNaN(v))CFG[k]=v});document.querySelectorAll("[data-tm]").forEach(s=>CFG.teamOver[s.dataset.tm]=s.value);save("glpi.cfg",CFG);$("#dlgSet").close();schedule();buildFilters();render()}}
+
+/* ============ arranque ============ */
+function init(){
+  tip();
+  const th=load("glpi.theme",null);if(th)document.documentElement.dataset.theme=th;
+  $("#bTheme").onclick=()=>{const d=document.documentElement,cur=d.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"),n=cur==="dark"?"light":"dark";d.dataset.theme=n;save("glpi.theme",n)};
+  $("#bFile").onclick=()=>$("#file").click();
+  $("#file").onchange=e=>{const f=e.target.files[0];if(f){S.handle=null;S.url="";clearInterval(S.timer);fromFile(f)}e.target.value=""};
+  $("#bLink").onclick=async()=>{
+    if(!window.showOpenFilePicker){alert("Tu navegador no permite vincular archivos. Usa Chrome o Edge, o carga el CSV manualmente.");return}
+    try{const[h]=await showOpenFilePicker({types:[{description:"CSV de GLPI",accept:{"text/csv":[".csv"]}}]});S.handle=h;S.url="";S.lastMod=0;await poll();schedule()}catch(e){if(e.name!=="AbortError")fail(e)}};
+  $("#bUrl").onclick=()=>$("#dlgUrl").showModal();
+  $("#urlCancel").onclick=()=>$("#dlgUrl").close();
+  $("#urlOk").onclick=async()=>{const u=$("#urlIn").value.trim();if(!u)return;$("#dlgUrl").close();S.url=u;S.handle=null;await poll();schedule()};
+  $("#bSet").onclick=openSettings;$("#bPrint").onclick=()=>{render();window.print()};
+  let dc=0;const dr=$("#drop");
+  addEventListener("dragenter",e=>{e.preventDefault();dc++;dr.style.display="flex"});addEventListener("dragleave",e=>{dc=Math.max(0,dc-1);if(!dc)dr.style.display="none"});
+  addEventListener("dragover",e=>e.preventDefault());
+  addEventListener("drop",e=>{e.preventDefault();dc=0;dr.style.display="none";const f=e.dataTransfer.files[0];if(f){S.handle=null;S.url="";clearInterval(S.timer);fromFile(f)}});
+  addEventListener("beforeprint",()=>render());addEventListener("afterprint",()=>render());
+  if(SNAP.length>10)loadSnap().then(r=>{setData(r,SNAP_NAME)}).catch(e=>{buildFilters();$("#srcTxt").textContent="Carga un CSV exportado de GLPI para comenzar";S.err=null});
+  else{buildFilters();$("#srcTxt").textContent="Carga un CSV exportado de GLPI para comenzar (botón «Cargar CSV» o arrástralo aquí)"}}
+init();
+</script>
+</body>
+</html>

@@ -124,6 +124,21 @@ entidades y % sin categoría. Se refresca solo cada 60 s.
   ruta de un CSV exportado de GLPI y el tablero se calcula desde ese archivo.
   No subas el CSV al repositorio (contiene datos de usuarios).
 
+## Tablero HTML independiente (`tablero/Tablero_GLPI.html`)
+
+Un solo archivo HTML, sin servidor ni librerías: se abre con doble clic.
+
+- Carga el CSV exportado de GLPI (botón *Cargar CSV* o arrastrándolo), o se
+  vincula a un archivo (*Vincular archivo*, Chrome/Edge) para actualizarse solo
+  cada 60 s cuando se sobrescribe el export, o lo lee desde una URL.
+- Pestañas: Resumen, Backlog y técnicos, Flujo y tiempos, Demanda, Calidad de
+  datos y Reporte por técnico. Filtros por periodo, entidad, equipo, técnico,
+  tipo, prioridad y búsqueda; alertas con clic, tabla ordenable con exportación
+  a CSV, tema claro/oscuro, ajustes de umbrales e impresión a PDF.
+- `python3 tablero/build.py <csv_glpi>` regenera el HTML con una instantánea
+  incrustada del CSV (sin solicitantes ni descripciones; solo títulos de
+  tickets no cerrados). Sin instantánea, el HTML abre vacío y pide el CSV.
+
 ## 5. Despliegue on-premise
 
 Al ser un despliegue interno de la UTI, la forma más simple es:

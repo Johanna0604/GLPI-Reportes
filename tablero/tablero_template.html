@@ -122,7 +122,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .dlg-f{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 #drop{position:fixed;inset:0;background:rgba(42,120,214,.18);border:4px dashed var(--accent);z-index:60;display:none;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--accent);pointer-events:none}
 .foot{font-size:11.5px;color:var(--tx3);margin-top:18px}
-.fl-svg text{fill:var(--tx2);font-size:14px}
+.fl-svg text{fill:var(--tx2);font-size:13px}.fl-svg .ax{fill:var(--tx3);font-size:12.5px}.fl-svg .ax.we{fill:var(--tx3);opacity:.7}
+.fchips{display:flex;flex-wrap:wrap;gap:8px 22px;margin:2px 0 10px}.fc{display:flex;gap:8px;align-items:center;font-size:13px}.fc i{width:12px;height:12px;border-radius:3px;flex:none}.fc b{font-size:21px;margin-right:3px}.fc small{display:block;color:var(--tx3);font-size:12px;max-width:260px}.fc.net{border-left:4px solid var(--good);padding-left:10px}.fc.net.warn{border-left-color:var(--warn)}
 .col2{display:flex;flex-direction:column;gap:14px;min-width:0}
 @media(max-width:640px){.rows li{grid-template-columns:12px 1fr 36px 46px}.rows .m{display:none}.hb li{grid-template-columns:90px 1fr auto}.kpi .v{font-size:24px}}
 @media print{header.top .btns,.filters,nav.tabs,.tools,.pager,.mini,.seg,dialog,#tip{display:none!important}header.top{position:static}
@@ -337,20 +338,44 @@ function flowSeries(V,g){
   const I=Object.fromEntries(keys.map(k=>[k,0])),O={...I};
   V.openedW.forEach(t=>{const k=bucketKey(t.opened,g);if(k in I)I[k]++});V.closedW.forEach(t=>{const k=bucketKey(t.closed,g);if(k in O)O[k]++});
   let s=0;return keys.map(k=>({k,i:I[k],o:O[k],s:(s+=I[k]-O[k])}))}
-function flowSVG(series){
-  if(!series.length)return'<div class="empty">Sin datos.</div>';
-  const W=900,H=300,L=44,R=44,T=12,B=30,n=series.length,iw=(W-L-R)/n;
-  const mx=Math.max(1,...series.map(d=>Math.max(d.i,d.o))),sm=Math.max(...series.map(d=>d.s),0),sn=Math.min(...series.map(d=>d.s),0),sr=(sm-sn)||1;
-  const y=v=>T+(H-T-B)*(1-v/mx),ys=v=>T+(H-T-B)*(1-(v-sn)/sr),bw=Math.max(1.5,Math.min(16,iw/2.6));
-  let g="";for(let k=0;k<=4;k++){const v=mx*k/4,yy=y(v);g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--grid)"/><text x="${L-6}" y="${yy+4}" text-anchor="end">${Math.round(v)}</text>`}
-  for(let k=0;k<=4;k++){const v=sn+sr*k/4;g+=`<text x="${W-R+6}" y="${ys(v)+4}">${Math.round(v)}</text>`}
-  if(sn<0&&sm>0)g+=`<line x1="${L}" x2="${W-R}" y1="${ys(0)}" y2="${ys(0)}" stroke="var(--axis)" stroke-dasharray="4 3"/>`;
-  const step=Math.ceil(n/9);
-  series.forEach((d,i)=>{const x=L+iw*i+iw/2;
-    g+=`<g data-tip="${d.k}\nIngresados: ${d.i}\nCerrados: ${d.o}\nSaldo acumulado: ${d.s}"><rect x="${L+iw*i}" y="${T}" width="${iw}" height="${H-T-B}" fill="transparent"/><rect x="${x-bw-.5}" y="${y(d.i)}" width="${bw}" height="${H-B-y(d.i)}" fill="var(--c1)" rx="1.5"/><rect x="${x+.5}" y="${y(d.o)}" width="${bw}" height="${H-B-y(d.o)}" fill="var(--c3)" rx="1.5"/></g>`;
-    if(i%step===0)g+=`<text x="${x}" y="${H-10}" text-anchor="middle">${d.k.length>7?d.k.slice(5):d.k}</text>`});
-  g+=`<polyline fill="none" stroke="var(--c2)" stroke-width="2.2" points="${series.map((d,i)=>(L+iw*i+iw/2)+","+ys(d.s)).join(" ")}"/>`;
-  return`<svg class="fl-svg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Ingresos, cierres y saldo acumulado">${g}</svg><div class="leg"><span><i style="background:var(--c1)"></i>Ingresados</span><span><i style="background:var(--c3)"></i>Cerrados</span><span><i style="background:var(--c2)"></i>Saldo acumulado (eje derecho)</span></div>`}
+let FLOWN=0;
+const DN=["dom","lun","mar","mié","jue","vie","sáb"],MN=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const sgn=v=>v>0?"+"+fmt(v):v<0?"−"+fmt(-v):"0";
+function niceTicks(max){const raw=Math.max(1,max)/4,mag=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/mag,step=(f<=1?1:f<=2?2:f<=5?5:10)*mag,top=Math.ceil(max/step)*step||step,t=[];for(let v=0;v<=top+1e-9;v+=step)t.push(Math.round(v));return{top,t}}
+function flowBlock(series,gran="day"){
+  if(!series.length)return'<div class="empty">Sin datos para los filtros actuales.</div>';
+  let acc=0;const D=series.map(d=>({...d,s:(acc+=d.i-d.o)})),n=D.length;
+  const tI=D.reduce((a,d)=>a+d.i,0),tO=D.reduce((a,d)=>a+d.o,0),net=tI-tO,unit={day:"día",week:"semana",month:"mes"}[gran],avg=x=>fmt(r1(x/n));
+  const chips=`<div class="fchips"><div class="fc"><i style="background:var(--c1)"></i><div><b>${fmt(tI)}</b> ingresados<small>${avg(tI)} por ${unit}</small></div></div>
+   <div class="fc"><i style="background:var(--c3)"></i><div><b>${fmt(tO)}</b> cerrados<small>${avg(tO)} por ${unit}</small></div></div>
+   <div class="fc net ${net>0?"warn":""}"><div><b>${sgn(net)}</b> saldo<small>${net>0?"Entraron más de los que se cerraron: el backlog crece":net<0?"Se cerraron más de los que entraron: el backlog baja":"Ingresos y cierres iguales"}</small></div></div></div>`;
+  const W=900,L=44,R=66,P1=24,P1B=204,Q0=270,Q1=360,H=384,iw=(W-L-R)/n,bw=Math.max(2,Math.min(18,iw/2.4));
+  const mx=Math.max(1,...D.map(d=>Math.max(d.i,d.o))),nt=niceTicks(mx),y=v=>P1B-(P1B-P1)*v/nt.top;
+  const lo0=Math.min(0,...D.map(d=>d.s)),hi0=Math.max(0,...D.map(d=>d.s)),pad=((hi0-lo0)||1)*.14,lo=lo0-pad,hi=hi0+pad,ys=v=>Q0+(Q1-Q0)*(1-(v-lo)/(hi-lo)),z=ys(0),id=++FLOWN;
+  const lab=(d,i)=>{if(gran==="month")return MN[+d.k.slice(5,7)-1]+" "+d.k.slice(2,4);if(gran==="week")return"sem "+d.k.slice(8)+"/"+d.k.slice(5,7);const dw=new Date(d.k+"T00:00:00Z").getUTCDay();return DN[dw]+" "+d.k.slice(8)};
+  const step=gran==="day"?(n<=16?1:n<=31?2:Math.ceil(n/14)):Math.ceil(n/10),x=i=>L+iw*i+iw/2;
+  let g="";
+  g+=`<text x="${L}" y="14" class="ax">Tickets por ${unit}</text>`;
+  nt.t.forEach(v=>{g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end" class="ax">${v}</text>`});
+  if(gran==="day")D.forEach((d,i)=>{const dw=new Date(d.k+"T00:00:00Z").getUTCDay();if(dw===0||dw===6){g+=`<rect x="${L+iw*i}" y="${P1}" width="${iw}" height="${P1B-P1}" fill="var(--grid)" opacity=".55"/><rect x="${L+iw*i}" y="${Q0}" width="${iw}" height="${Q1-Q0}" fill="var(--grid)" opacity=".55"/>`}});
+  D.forEach((d,i)=>{const dw=gran==="day"?new Date(d.k+"T00:00:00Z").getUTCDay():1,we=dw===0||dw===6;
+    g+=`<rect x="${x(i)-bw-1}" y="${y(d.i)}" width="${bw}" height="${P1B-y(d.i)}" fill="var(--c1)" rx="2"/><rect x="${x(i)+1}" y="${y(d.o)}" width="${bw}" height="${P1B-y(d.o)}" fill="var(--c3)" rx="2"/>`;
+    if(i%step===0||i===n-1&&n%step===1)g+=`<text x="${x(i)}" y="${P1B+20}" text-anchor="middle" class="ax${we?" we":""}">${lab(d,i)}</text>`});
+  g+=`<line x1="${L}" x2="${W-R}" y1="${P1B}" y2="${P1B}" stroke="var(--axis)"/>`;
+  if(gran==="day")g+=`<text x="${W-R}" y="14" text-anchor="end" class="ax">Sombreado = fin de semana</text>`;
+  // panel de saldo
+  g+=`<text x="${L}" y="${Q0-14}" class="ax" style="font-weight:700;fill:var(--tx)">Saldo acumulado</text><text x="${L+118}" y="${Q0-14}" class="ax">ingresados − cerrados desde el inicio · sube = backlog crece · baja = backlog baja</text>`;
+  g+=`<defs><clipPath id="fu${id}"><rect x="0" y="${Q0-2}" width="${W}" height="${Math.max(0,z-Q0+2)}"/></clipPath><clipPath id="fd${id}"><rect x="0" y="${z}" width="${W}" height="${Math.max(0,Q1-z+2)}"/></clipPath></defs>`;
+  const pts=D.map((d,i)=>x(i)+","+ys(d.s)).join(" "),poly=`${x(0)},${z} ${pts} ${x(n-1)},${z}`;
+  g+=`<polygon points="${poly}" fill="var(--c2)" opacity=".38" clip-path="url(#fu${id})"/><polygon points="${poly}" fill="var(--c3)" opacity=".38" clip-path="url(#fd${id})"/>`;
+  g+=`<line x1="${L}" x2="${W-R}" y1="${z}" y2="${z}" stroke="var(--tx3)" stroke-dasharray="5 4"/><text x="${L-8}" y="${z+4}" text-anchor="end" class="ax">0</text>`;
+  const ex=[Math.max(...D.map(d=>d.s)),Math.min(...D.map(d=>d.s))].filter(v=>Math.abs(ys(v)-z)>14);[...new Set(ex)].forEach(v=>g+=`<text x="${L-8}" y="${ys(v)+4}" text-anchor="end" class="ax">${sgn(v)}</text>`);
+  g+=`<polyline fill="none" stroke="var(--tx)" stroke-width="2" stroke-linejoin="round" points="${pts}"/>`;
+  const last=D[n-1];g+=`<circle cx="${x(n-1)}" cy="${ys(last.s)}" r="4.5" fill="var(--tx)"/><text x="${x(n-1)+9}" y="${ys(last.s)+5}" style="font-weight:700;fill:var(--tx);font-size:15px">${sgn(last.s)}</text>`;
+  // zonas de lectura (tooltip)
+  D.forEach((d,i)=>{const dw=gran==="day"?new Date(d.k+"T00:00:00Z").getUTCDay():1,name=gran==="day"?DN[dw]+" "+d.k.slice(8)+"/"+d.k.slice(5,7):lab(d,i);
+    g+=`<rect x="${L+iw*i}" y="${P1}" width="${iw}" height="${Q1-P1}" fill="transparent" data-tip="${name}\nIngresados: ${d.i}\nCerrados: ${d.o}\nSaldo del ${unit}: ${sgn(d.i-d.o)}\nSaldo acumulado: ${sgn(d.s)}"/>`});
+  return chips+`<svg class="fl-svg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Ingresos y cierres por ${unit}, y saldo acumulado. Ingresaron ${tI}, se cerraron ${tO}, saldo ${net}.">${g}</svg>`}
 function table(cols,rows,{sortKey,dir,onSort}={}){
   return`<div class="tw"><table class="dt"><thead><tr>${cols.map(c=>`<th class="${c.num?"num":""}" data-k="${c.k}" ${sortKey===c.k?`aria-sort="${dir>0?"ascending":"descending"}"`:""} tabindex="0">${c.l}${sortKey===c.k?(dir>0?" ▲":" ▼"):""}</th>`).join("")}</tr></thead><tbody>${rows.length?rows.map(r=>`<tr>${cols.map(c=>`<td class="${c.num?"num":""} ${c.cls||""}">${c.f?c.f(r):esc(r[c.k])}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${cols.length}" class="empty">Sin resultados.</td></tr>`}</tbody></table></div>`}
 const csvEsc=v=>{v=String(v??"");return/[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
@@ -394,6 +419,9 @@ function pResumen(V,K,rank){
    ["age7",`Casos con más de ${CFG.ageWarn} días`,K.over,K.tOver,"Meta común: cerrarlos esta semana"],["stale",`Sin actualizar > ${CFG.stale} días`,K.stale,K.stale>0?"critical":"good","Pedir avance al técnico"],
    ["wait7",`En espera > ${CFG.ageWarn} días`,K.wait7,K.wait7>0?"warning":"good","Destrabar o confirmar con el usuario"],["res",`Resueltos sin movimiento > ${CFG.resolvedStale} días`,K.res3,K.res3>0?"warning":"good","Confirmar cierre"],
    ["cat","Tickets sin categoría (periodo)",K.ncp+"%",K.tNc,"Meta < "+CFG.noCatGood+"%"]];
+  const inTiles=new Set(["sin","age7","stale"]);
+  const shown=al.filter(a=>!inTiles.has(a[0])&&a[3]!=="good");
+  const alertsHtml=shown.length?`<ul class="alerts">${shown.map(a=>`<li><button type="button" class="${a[3]}" data-go="${a[0]}"><span><b>${a[1]}</b><small>${a[4]}</small></span><span></span><span class="n">${a[2]}</span></button></li>`).join("")}</ul>`:'<div class="empty">Todo en orden: no hay alertas fuera de las tarjetas.</div>';
   const trend=flowSeries(V,"day").slice(-14);
   return`<div class="grid kpis">
    ${kpi("pend","Tickets pendientes",K.n,K.tPend,"Meta ≤ "+CFG.metaPend)}${kpi("sin","Sin técnico asignado",K.sin,K.sin>0?"critical":"good","Debe ser 0")}
@@ -401,10 +429,10 @@ function pResumen(V,K,rank){
    ${kpi("stale",`Sin actualizar > ${CFG.stale} días`,K.stale,K.stale>0?"critical":"good","Pedir avance")}
    ${kpi("flujo","Hoy: ingresados / cerrados",K.oT+" / "+K.cT,K.oT>K.cT?"warning":"good",ymd(V.now))}</div>
   <div class="grid g2">
-   ${card("Alertas operativas","Clic en una alerta para ver los tickets en la tabla",`<ul class="alerts">${al.map(a=>`<li><button type="button" class="${a[3]}" data-go="${a[0]}"><span><b>${a[1]}</b><small>${a[4]}</small></span><span></span><span class="n">${a[2]}</span></button></li>`).join("")}</ul>`)}
+   ${card("Requieren atención","Solo lo que no está en las tarjetas de arriba y necesita acción. Clic para ver los tickets.",alertsHtml)}
    ${card("Conclusión y recomendación","Generada con las reglas del reporte de pendientes",`<div class="concl">${C.lines.map(l=>`<p>${l}</p>`).join("")}<div class="box"><b>Recomendación:</b> ${C.rec}</div></div>${C.top?`<div class="callout"><b>Prioridad de la mesa de ayuda</b><small>${esc(C.top.name)} concentra el mayor número de pendientes (${C.top.n} tickets, ${C.top.max} días el más antiguo).</small></div>`:""}`,`<button class="mini" id="bCopy" type="button">Copiar</button>`)}
    ${card("Pendientes por antigüedad","Días desde la apertura · rojo = más de "+CFG.ageWarn+" días",ageChart(V))}
-   ${card("Ingresos vs. cierres · últimos 14 días","Saldo acumulado "+trend.reduce((s,d)=>s+d.i-d.o,0),flowSVG(trend))}
+   ${card("Ingresos vs. cierres · últimos 14 días","Arriba, lo que entra y lo que se cierra cada día; abajo, cómo evoluciona la diferencia",flowBlock(trend,"day"))}
   </div>`}
 function ageChart(V){
   const B=[["0–2 días",2],["3–7 días",7],["8–15 días",15],["16–30 días",30],["Más de 30 días",1e9]],c=B.map(()=>0);
@@ -437,9 +465,9 @@ function pBacklog(V,K,rank){
 function tblRows(V){
   const T=S.tbl,now=V.now;
   let r=V.backlog.map(t=>({...t,age:Math.round(V.age(t)*10)/10,idle:Math.round((now-t.modified)/DAY*10)/10,tech:t.techs.length?t.techs.map(n=>techInfo(n).name).join(", "):SIN,stl:{1:"Nuevo",2:"En curso (asignado)",3:"En curso (planificado)",4:"En espera"}[t.st]}));
-  const hidden=r.filter(x=>EXCL.test(x.title)).length;if(!T.showExcl)r=r.filter(x=>!EXCL.test(x.title));
   const qk=T.quick;if(qk==="sin")r=r.filter(x=>!x.techs.length);else if(qk==="age7")r=r.filter(x=>x.age>CFG.ageWarn);else if(qk==="age30")r=r.filter(x=>x.age>CFG.ageCrit);
   else if(qk==="stale")r=r.filter(x=>x.idle>CFG.stale);else if(qk==="wait7")r=r.filter(x=>x.st===4&&x.age>CFG.ageWarn);
+  const hidden=r.filter(x=>EXCL.test(x.title)).length;if(!T.showExcl)r=r.filter(x=>!EXCL.test(x.title));
   const k=T.sort;r.sort((a,b)=>{const x=a[k],y=b[k];return(typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y),"es",{numeric:true}))*T.dir});
   return{r,hidden}}
 function tblBody(V,K){
@@ -470,7 +498,7 @@ function pFlujo(V,K){
     ${kpi("x","Tasa de cierre",pct(tot[1],tot[0])+"%",pct(tot[1],tot[0])>=98?"good":"warning","Cerrados ÷ ingresados")}
     ${kpi("x","Resolución (mediana)",fH(med),chg!=null&&chg>25?"critical":"good",`P90 ${fH(quant(hrs,.9))}${chg!=null?` · ${chg>0?"▲":"▼"} ${Math.abs(chg)}% vs. periodo previo`:""}`)}
     ${kpi("x","Resolución (promedio)",fH(hrs.length?hrs.reduce((a,b)=>a+b,0)/hrs.length:null),"",hrs.length+" tickets cerrados")}</div>
-   <div class="grid">${card("Ingresos vs. cierres","Barras por periodo y línea de saldo acumulado · "+fmtDT(V.from).slice(0,10)+" a "+fmtDT(V.to).slice(0,10),flowSVG(ser),
+   <div class="grid">${card("Ingresos vs. cierres","Arriba, lo que entra y lo que se cierra; abajo, cómo evoluciona la diferencia · "+fmtDT(V.from).slice(0,10)+" a "+fmtDT(V.to).slice(0,10),flowBlock(ser,gran),
      `<div class="seg" role="group" aria-label="Agrupación">${[["auto","Auto"],["day","Diario"],["week","Semanal"],["month","Mensual"]].map(([k,l])=>`<button type="button" data-gran="${k}" aria-pressed="${S.gran===k}">${l}</button>`).join("")}</div>`)}</div>
    <div class="grid g2" style="margin-top:14px">
     ${card("Tiempo de resolución por prioridad","Mediana (apertura → cierre)",hbars(byP.map(x=>({l:x.k,v:x.a.length?median(x.a):0,c:"var(--c1)",sub:`n=${x.a.length}`})),{fmtv:r=>fH(r.v)})+(noDiff?'<div class="note" style="margin-top:10px">La prioridad casi no cambia el tiempo de resolución: conviene revisar cómo se asigna.</div>':""))}

@@ -136,8 +136,8 @@ Un solo archivo HTML, sin servidor ni librerías: se abre con doble clic.
   tipo, prioridad y búsqueda; alertas con clic, tabla ordenable con exportación
   a CSV, tema claro/oscuro, ajustes de umbrales e impresión a PDF.
 - `python3 tablero/build.py <csv_glpi>` regenera el HTML con una instantánea
-  incrustada del CSV (sin solicitantes ni descripciones; solo títulos de
-  tickets no cerrados). Sin instantánea, el HTML abre vacío y pide el CSV.
+  incrustada del CSV (sin solicitantes ni descripciones; con los títulos de
+  todos los tickets para poder buscarlos). Sin instantánea, el HTML abre vacío y pide el CSV.
 
 ## 5. Despliegue on-premise
 

@@ -2,8 +2,8 @@
 
 Uso:  python3 tablero/build.py <ruta_csv_glpi> [salida.html]
 Sin CSV el HTML igual funciona: se carga el archivo desde el navegador.
-La instantánea no incluye solicitantes ni descripciones; solo los títulos de
-tickets no cerrados.
+La instantánea no incluye solicitantes ni descripciones; los títulos de
+todos los tickets.
 """
 import base64, gzip, json, re, sys
 from pathlib import Path
@@ -35,7 +35,7 @@ for i, r in df.iterrows():
     rows.append([int(re.sub(r"\D", "", r["ID"])), idx(ents, r["Entidad"]), idx(cats, cat) if cat else -1, tl, st,
                  1 if r["Tipo"] == "Incidencia" else 0, {"Alta": 0, "Media": 1, "Baja": 2}.get(r["Prioridad"], 1),
                  idx(origins, r["Origen de la solicitud"] or "(sin dato)"), op[i], cl[i], mo[i],
-                 1 if r["Solución - Solución"] else 0, 1 if vol[i] else 0, r["Título"] if st < 6 else ""])
+                 1 if r["Solución - Solución"] else 0, 1 if vol[i] else 0, r["Título"]])
 cols = [{"n": c, "e": round(100 * ((df[c] == "") | (df[c] == "0 segundos")).mean(), 1)} for c in df.columns if c.strip() and not c.startswith("Unnamed")]
 inv = lambda d: [k for k, _ in sorted(d.items(), key=lambda kv: kv[1])]
 snap = {"ents": inv(ents), "cats": inv(cats), "techs": inv(techs), "origins": inv(origins), "cols": cols, "rows": rows}

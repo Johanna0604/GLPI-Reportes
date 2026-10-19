@@ -150,6 +150,7 @@ section.panel{display:block!important;break-inside:auto}.card,.kpi,.tc{break-ins
 <nav class="tabs" role="tablist" id="tabs"></nav>
 <main id="main">
   <div id="notes"></div>
+  <div id="search"></div>
   <section class="panel" id="p-resumen"></section>
   <section class="panel" id="p-backlog"></section>
   <section class="panel" id="p-flujo"></section>
@@ -544,6 +545,17 @@ function pReporte(V,K,rank){
   <div class="tcards">${rank.map(r=>`<div class="tc"><h4 style="background:${TEAM_VAR[r.team]}"><span>${esc(r.name)}</span><span>${r.n} pendiente${r.n===1?"":"s"}</span></h4><ul>${r.list.length?r.list.map(o=>`<li><span class="id">#${o.id}</span><span title="${esc(o.title)}">${esc(o.title)}${o.st===4?" · espera":o.st===3?" · planif.":""}</span><span class="${o.d>CFG.ageWarn?"flag":""}">${o.d}d</span></li>`).join(""):'<li><span></span><span style="color:var(--tx3)">Sin casos listables</span><span></span></li>'}</ul></div>`).join("")}</div>
   <p class="foot">No se listan los tickets MODIF-DATOS ni ELIM. Un ticket con varios técnicos aparece en la lista de cada uno.</p>`}
 
+const ST_L={1:"Nuevo",2:"En curso (asignado)",3:"En curso (planificado)",4:"En espera",5:"Resuelto",6:"Cerrado"};
+function searchCard(V){
+  const q=S.filters.q.trim();if(!q)return"";
+  const qn=q.replace(/\D/g,""),m=[...V.F].sort((a,b)=>((b.id===qn)-(a.id===qn))||(b.opened-a.opened)),pend=m.filter(t=>t.st<=4).length,show=m.slice(0,30);
+  const cols=[{k:"id",l:"ID",f:x=>`<b style="color:var(--accent)">#${x.id}</b>`},{k:"title",l:"Título",cls:"ttl",f:x=>esc(x.title||"(sin título)")},
+   {k:"st",l:"Estado",f:x=>`<span class="chip">${ST_L[x.st]}</span>`},{k:"tech",l:"Técnico(s)",f:x=>esc(x.techs.length?x.techs.map(n=>techInfo(n).name).join(", "):SIN)},
+   {k:"unit",l:"Entidad"},{k:"opened",l:"Apertura",f:x=>fmtDT(x.opened)},{k:"closed",l:"Cierre",f:x=>x.closed?fmtDT(x.closed):"—"},
+   {k:"dur",l:"Duración",num:true,f:x=>x.closed&&x.closed>=x.opened?fH((x.closed-x.opened)/HOUR):r1((V.now-x.opened)/DAY)+" d abierto"}];
+  const hint=!m.length?"No hay tickets que coincidan con la búsqueda y los filtros actuales. Prueba con «Limpiar filtros».":
+   pend===0?"Ninguno está pendiente, por eso no aparece en «Backlog» ni en «Reporte por técnico», que solo muestran tickets pendientes.":`${pend} de ${m.length} están pendientes.`;
+  return`<section class="card" style="margin-bottom:14px"><div class="card-h"><div><h3>Resultados de la búsqueda «${esc(q)}»</h3><p class="sub">${fmt(m.length)} ticket(s) en cualquier estado${m.length>30?" · se muestran los 30 más recientes":""} · ${hint}</p></div><button class="mini" id="bSrchClear" type="button">Borrar búsqueda</button></div>${m.length?table(cols,show):""}</section>`}
 /* ============ render principal ============ */
 const TABS=[["resumen","Resumen"],["backlog","Backlog y técnicos"],["flujo","Flujo y tiempos"],["demanda","Demanda"],["calidad","Calidad de datos"],["reporte","Reporte por técnico"]];
 let V,K,RANK;
@@ -555,6 +567,7 @@ function render(){
   $("#notes").innerHTML=(S.unknown.size?`<div class="note">Técnicos sin equipo asignado (se muestran como Soporte Técnico): <b>${[...S.unknown].map(esc).join(", ")}</b>. <button class="mini" id="bTeams" type="button">Asignar equipo</button></div>`:"")+(S.err?`<div class="note crit">${esc(S.err)}</div>`:"");
   const P={resumen:()=>pResumen(V,K,RANK),backlog:()=>pBacklog(V,K,RANK),flujo:()=>pFlujo(V,K),demanda:()=>pDemanda(V,K),calidad:()=>pCalidad(V,K),reporte:()=>pReporte(V,K,RANK)};
   for(const[k]of TABS){const el=$("#p-"+k);el.classList.toggle("on",S.tab===k||matchMedia("print").matches);el.innerHTML=P[k]()}
+  $("#search").innerHTML=searchCard(V);
   setStatus(srcLabel(),"");bindDyn()}
 function go(key){
   const m={pend:["backlog","all"],sin:["backlog","sin"],age7:["backlog","age7"],age30:["backlog","age30"],stale:["backlog","stale"],wait7:["backlog","wait7"],res:["backlog","all"],cat:["calidad"],flujo:["flujo"]};
@@ -572,7 +585,8 @@ function bindDyn(){
   const pp=$("#pPrev");if(pp)pp.onclick=()=>{S.tbl.page--;render()};const pn=$("#pNext");if(pn)pn.onclick=()=>{S.tbl.page++;render()};
   const tc=$("#tCsv");if(tc)tc.onclick=()=>{const{r}=tblRows(V);download("pendientes_glpi_"+ymd(V.now)+".csv",["ID","Título","Estado","Técnico(s)","Entidad","Categoría","Prioridad","Antigüedad (d)","Sin mover (d)"].join(";")+"\n"+r.map(x=>[x.id,x.title,x.stl,x.tech,x.unit,x.cat,x.prio,x.age,x.idle].map(csvEsc).join(";")).join("\n"))};
   const cp=$("#bCopy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(conclusion(V,K,RANK).txt);cp.textContent="Copiado ✓"}catch(e){cp.textContent="No se pudo copiar"}};
-  const bt=$("#bTeams");if(bt)bt.onclick=openSettings}
+  const bt=$("#bTeams");if(bt)bt.onclick=openSettings;
+  const sc=$("#bSrchClear");if(sc)sc.onclick=()=>{S.filters.q="";const i=$("#fQ");if(i)i.value="";render()}}
 
 /* ============ ajustes ============ */
 function openSettings(){

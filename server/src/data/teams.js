@@ -34,4 +34,7 @@ export const TECHNICIANS = {
   'JHON BEGGER INOSENCIO CHAVEZ': ['Jhon Inosencio', SOP],
   'DENNIS PLINIO QUISPE POLLOYQUERI': ['Dennis Quispe', SOP],
   'ANTONY WILIAM MONSALVE ISIDRO': ['Antony Monsalve', SOP],
+  'JUAN GONZALES BAZÁN': ['Juan Gonzales', DES],
+  'JUAN GONZALES BAZAN': ['Juan Gonzales', DES],
+  'DALI HARRISON ECHEVERRIA RODRIGUEZ': ['Dali Echeverria', INF],
 };

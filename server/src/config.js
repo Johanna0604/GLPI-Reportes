@@ -38,6 +38,10 @@ export const config = {
     port: Number(process.env.PORT || 4000),
     corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   },
+  cache: {
+    // 0 desactiva la caché
+    ttlSeconds: Number(process.env.CACHE_TTL_SECONDS ?? 120),
+  },
   dashboardAuth: {
     user: process.env.DASHBOARD_USER || '',
     password: process.env.DASHBOARD_PASSWORD || '',

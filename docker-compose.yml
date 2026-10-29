@@ -1,0 +1,12 @@
+services:
+  glpi-reportes:
+    build:
+      context: .
+      args:
+        VITE_REFRESH_SECONDS: ${VITE_REFRESH_SECONDS:-120}
+    image: glpi-reportes:latest
+    container_name: glpi-reportes
+    restart: unless-stopped
+    env_file: .env          # tokens y GLPI_* (nunca se copian a la imagen)
+    ports:
+      - "${PORT:-4000}:4000"

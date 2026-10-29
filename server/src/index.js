@@ -1,4 +1,7 @@
 import express from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import { config } from './config.js';
 import { basicAuth } from './middleware/basicAuth.js';
@@ -15,6 +18,14 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/reports', basicAuth, reportsRouter);
+
+// En producción (Docker) el mismo proceso sirve el frontend construido.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const staticDir = process.env.STATIC_DIR || path.resolve(__dirname, '../../client/dist');
+if (fs.existsSync(path.join(staticDir, 'index.html'))) {
+  app.use(basicAuth, express.static(staticDir));
+  app.get(/^(?!\/api\/).*/, basicAuth, (req, res) => res.sendFile(path.join(staticDir, 'index.html')));
+}
 
 app.use((err, req, res, next) => {
   console.error(err);

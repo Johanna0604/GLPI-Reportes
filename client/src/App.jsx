@@ -7,24 +7,30 @@ import RankedBarChart from './components/RankedBarChart.jsx';
 import SlaChart from './components/SlaChart.jsx';
 import TrendChart from './components/TrendChart.jsx';
 
-function useReport(fetcher, range) {
-  const [state, setState] = useState({ data: null, loading: true, error: null });
+// Intervalo de auto-refresco en segundos (VITE_REFRESH_SECONDS al construir);
+// 0 lo desactiva. Debe ser >= al TTL de la caché del backend para ser útil.
+const REFRESH_SECONDS = Number(import.meta.env.VITE_REFRESH_SECONDS ?? 120);
+
+function useReport(fetcher, range, tick) {
+  const [state, setState] = useState({ data: null, loading: true, error: null, updatedAt: null });
 
   useEffect(() => {
     let cancelled = false;
-    setState((s) => ({ ...s, loading: true, error: null }));
+    // En un refresco automático se conservan los datos visibles (sin parpadeo
+    // de "cargando"); solo la primera carga o un cambio de rango limpian.
+    setState((s) => ({ ...s, loading: s.data === null, error: null }));
     fetcher(range)
       .then((data) => {
-        if (!cancelled) setState({ data, loading: false, error: null });
+        if (!cancelled) setState({ data, loading: false, error: null, updatedAt: new Date() });
       })
       .catch((err) => {
-        if (!cancelled) setState({ data: null, loading: false, error: err.message });
+        if (!cancelled) setState((s) => ({ ...s, loading: false, error: err.message }));
       });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [range.from, range.to]);
+  }, [range.from, range.to, tick]);
 
   return state;
 }
@@ -38,12 +44,26 @@ export default function App() {
     setRange({ from: d.toISOString().slice(0, 10), to: undefined });
   }, []);
 
-  const summary = useReport(api.summary, range);
-  const byStatus = useReport(api.byStatus, range);
-  const byTechnician = useReport(api.byTechnician, range);
-  const byCategory = useReport(api.byCategory, range);
-  const sla = useReport(api.sla, range);
-  const trends = useReport(api.trends, range);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!REFRESH_SECONDS) return undefined;
+    const id = setInterval(() => {
+      if (!document.hidden) setTick((t) => t + 1);
+    }, REFRESH_SECONDS * 1000);
+    const onVisible = () => !document.hidden && setTick((t) => t + 1);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
+
+  const summary = useReport(api.summary, range, tick);
+  const byStatus = useReport(api.byStatus, range, tick);
+  const byTechnician = useReport(api.byTechnician, range, tick);
+  const byCategory = useReport(api.byCategory, range, tick);
+  const sla = useReport(api.sla, range, tick);
+  const trends = useReport(api.trends, range, tick);
 
   const s = summary.data;
 
@@ -52,8 +72,16 @@ export default function App() {
       <header className="page-header">
         <div>
           <h1>Reportes Mesa de Ayuda</h1>
-          <p className="page-subtitle">UTI · PAE — datos en vivo desde GLPI</p>
+          <p className="page-subtitle">
+            UTI · PAE — datos desde GLPI
+            {summary.updatedAt &&
+              ` · actualizado ${summary.updatedAt.toLocaleTimeString('es-PE')}`}
+            {REFRESH_SECONDS > 0 && ` · se refresca cada ${Math.round(REFRESH_SECONDS / 60 * 10) / 10} min`}
+          </p>
         </div>
+        <button className="refresh-btn" onClick={() => setTick((t) => t + 1)}>
+          Actualizar ahora
+        </button>
       </header>
 
       <DateRangeFilter range={range} onChange={setRange} />

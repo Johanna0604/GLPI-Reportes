@@ -126,6 +126,34 @@ Al ser un despliegue interno de la UTI, la forma más simple es:
    IP allowlist, o el `DASHBOARD_USER`/`DASHBOARD_PASSWORD` ya incluido)
    ya que expone reportes de tickets.
 
+### Despliegue con Docker (recomendado)
+
+Un solo contenedor sirve la API y el frontend construido:
+
+```bash
+cp .env.example .env     # completa GLPI_* y DASHBOARD_USER/PASSWORD
+docker compose up -d --build
+```
+
+Dashboard en `http://<servidor>:4000`. Comandos útiles:
+
+```bash
+docker compose logs -f           # ver logs
+curl http://localhost:4000/api/health
+docker compose up -d --build     # actualizar tras un git pull
+```
+
+- **Caché**: `CACHE_TTL_SECONDS` (por defecto 120). Las respuestas se
+  reutilizan ese tiempo; si GLPI no responde se sirve el último dato
+  (cabecera `X-Cache: STALE`).
+- **Auto-refresco**: `VITE_REFRESH_SECONDS` (por defecto 120, 0 = off). El
+  navegador recarga los datos solo, pausa si la pestaña está oculta y
+  refresca al volver a ella. El tablero muestra la hora de la última
+  actualización.
+- El contenedor debe poder alcanzar `GLPI_API_URL` (red/VPN de la UTI).
+- Con `DASHBOARD_USER/PASSWORD` definidos, también la página (no solo la
+  API) pide usuario y contraseña. `/api/health` queda abierto.
+
 ## Estructura del proyecto
 
 ```

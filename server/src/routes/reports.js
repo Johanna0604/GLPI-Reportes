@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { cached } from '../services/cache.js';
 import {
   getTicketsByStatus,
   getTicketsByTechnician,
@@ -33,8 +34,12 @@ function extractErrorMessage(error) {
 function wrap(handler) {
   return async (req, res) => {
     try {
-      const result = await handler(parseRange(req));
-      res.json(result);
+      const range = parseRange(req);
+      const key = `${req.path}|${range.from || ''}|${range.to || ''}|${range.granularity || ''}`;
+      const { value, cache, storedAt } = await cached(key, () => handler(range));
+      res.set('X-Cache', cache);
+      res.set('X-Data-Updated-At', new Date(storedAt).toISOString());
+      res.json(value);
     } catch (error) {
       const status = error.response?.status || 500;
       const message = extractErrorMessage(error);
